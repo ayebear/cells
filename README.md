@@ -10,8 +10,8 @@ Features
 --------
 
 * Customizable rule sets (done)
-* Copying/pasting with a selection box (done, not committed)
-* Customizable color palette (planned)
+* Copying/pasting with a selection box (done)
+* Customizable color palette (done)
 * GUI for changing settings (planned)
 * And many more...
 
