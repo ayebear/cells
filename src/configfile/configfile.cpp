@@ -47,20 +47,20 @@ bool ConfigFile::loadFromFile(const string& filename)
 {
     bool status = false;
     configFilename = filename;
-    vector<string> lines;
+    std::vector<string> lines;
     if (StringUtils::readLinesFromFile(configFilename, lines, false))
     {
         parseLines(lines);
         status = true;
     }
     else
-        cout << "Error loading \"" << configFilename << "\"\n";
+        std::cout << "Error loading \"" << configFilename << "\"\n";
     return status;
 }
 
 void ConfigFile::loadFromString(const string& str)
 {
-    vector<string> lines;
+    std::vector<string> lines;
     StringUtils::getLinesFromString(str, lines, false);
     parseLines(lines);
 }
@@ -158,12 +158,12 @@ void ConfigFile::clear()
     options.clear(); // Clear all of the sections and options
 }
 
-void ConfigFile::parseLines(vector<string>& lines)
+void ConfigFile::parseLines(std::vector<string>& lines)
 {
     string section = "";
     bool multiLineComment = false;
     int commentType = StringUtils::NoComment;
-    for (string& line: lines) // Iterate through the vector of strings
+    for (string& line: lines) // Iterate through the std::vector of strings
     {
         StringUtils::trimWhiteSpace(line);
         commentType = StringUtils::stripComments(line, multiLineComment);
@@ -215,7 +215,7 @@ void ConfigFile::parseOptionLine(const string& line, const string& section)
         if (trimmedQuotes) // If quotes were removed
             option.setQuotes(true); // Add quotes to the option
         if (showWarnings && !optionSet)
-            cout << "Warning: Option \"" << name << "\" was out of range. Using default value: " << option.asStringWithQuotes() << endl;
+            std::cout << "Warning: Option \"" << name << "\" was out of range. Using default value: " << option.asStringWithQuotes() << std::endl;
     }
 }
 

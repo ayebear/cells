@@ -8,14 +8,20 @@ const char* Board::defaultRuleString = "B3/S23";
 
 Board::Board()
 {
-    cellColors[0] = sf::Color::Black;
-    cellColors[1] = sf::Color::White;
+    resetColors();
     readBoard = 0;
     writeBoard = 0;
     needToUpdateTexture = true;
     paintingLine = false;
     boardSprite.setPosition(0, 0);
     setRules();
+
+    // Setup border
+    border.setPosition(0, 0);
+    updateBorderSize();
+    border.setFillColor(sf::Color::Transparent);
+    border.setOutlineColor(sf::Color::Green);
+    border.setOutlineThickness(1);
 }
 
 Board::Board(unsigned width, unsigned height):
@@ -35,14 +41,17 @@ void Board::resize(unsigned width, unsigned height, bool preserve)
             board[0].clear();
             board[1].clear();
         }
+        
         // Resize the logical arrays
         board[0].resize(width, height);
         board[1].resize(width, height);
+        
         // Create a new image with this size
-        boardImage.create(width, height);
+        boardImage.create(width, height, cellColors.front().toColor());
         if (preserve)
             updateImage();
         updateTexture();
+        updateBorderSize();
     }
 }
 
@@ -56,27 +65,37 @@ unsigned Board::height() const
     return board[readBoard].height();
 }
 
-void Board::simulate(unsigned count)
+void Board::setColors(const std::vector<sf::Color>& colors)
 {
-    sf::Vector2u cellPos;
-    for (unsigned generation = 0; generation < count; ++generation)
-    {
-        //std::cout << "Simulating...\n";
-        toggle(writeBoard);
-        // Go through the main part of the cells except for the edges
-        for (cellPos.y = 1; cellPos.y < board[readBoard].height() - 1; ++cellPos.y)
-            for (cellPos.x = 1; cellPos.x < board[readBoard].width() - 1; ++cellPos.x)
-                determineState(cellPos, countCellsNormal(cellPos));
-        // Top and bottom rows
-        for (cellPos.y = 0; cellPos.y < board[readBoard].height(); cellPos.y += board[readBoard].height() - 1)
-            for (cellPos.x = 0; cellPos.x < board[readBoard].width(); ++cellPos.x)
-                determineState(cellPos, countCellsToroidal(cellPos));
-        // Left and right columns
-        for (cellPos.x = 0; cellPos.x < board[readBoard].width(); cellPos.x += board[readBoard].width() - 1)
-            for (cellPos.y = 1; cellPos.y < board[readBoard].height() - 1; ++cellPos.y)
-                determineState(cellPos, countCellsToroidal(cellPos));
-        readBoard = writeBoard; // Same as toggle(readBoard), but doing this just to be safe
-    }
+    cellColors.clear();
+    for (const auto& col: colors)
+        cellColors.emplace_back(col);
+    if (cellColors.size() < 2)
+        resetColors();
+}
+
+void Board::setColors(const std::vector<std::string>& colors)
+{
+    cellColors.clear();
+    for (const std::string& colStr: colors)
+        cellColors.emplace_back(colStr);
+    if (cellColors.size() < 2)
+        resetColors();
+}
+
+std::vector<std::string> Board::getColorStrings() const
+{
+    std::vector<std::string> colorStrs;
+    for (const auto& col: cellColors)
+        colorStrs.push_back(col.toString());
+    return colorStrs;
+}
+
+void Board::resetColors()
+{
+    cellColors.clear();
+    cellColors.emplace_back(sf::Color::Black);
+    cellColors.emplace_back(sf::Color::White);
 }
 
 void Board::setRules(const std::string& ruleString)
@@ -84,9 +103,66 @@ void Board::setRules(const std::string& ruleString)
     rules.setFromString(ruleString.empty() ? defaultRuleString : ruleString);
 }
 
+void Board::setRules(const RuleSet& newRules)
+{
+    rules = newRules;
+}
+
 const std::string& Board::getRules() const
 {
     return rules.toString();
+}
+
+void Board::simulate(bool toroidal)
+{
+    simulate(sf::IntRect(0, 0, width(), height()), toroidal);
+}
+
+void Board::simulate(const sf::IntRect& rect, bool toroidal)
+{
+    auto fixedRect = fixRectangle(rect);
+    if (fixedRect.width > 0 && fixedRect.height > 0)
+    {
+        /*
+        The order in which the cells are simulated:
+        2 2 2 2 2
+        3 1 1 1 3
+        3 1 1 1 3
+        3 1 1 1 3
+        2 2 2 2 2
+        */
+
+        sf::Vector2u cellPos;
+        toggle(writeBoard);
+        unsigned bottom = fixedRect.top + fixedRect.height;
+        unsigned right = fixedRect.left + fixedRect.width;
+        unsigned totalCells = 0;
+
+        // This fixes a bug where partial simulations cause not all cells to be copied
+        if (fixedRect.width < width() || fixedRect.height < height()) // If this is a partial simulation
+            board[writeBoard] = board[readBoard]; // Copy the latest board to the board being written to
+
+        // Make sure the simulation area is at least 3x3
+        if (fixedRect.width >= 3 && fixedRect.height >= 3)
+        {
+            // 1) Go through the main part of the cells except for the edges
+            for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y)
+                for (cellPos.x = fixedRect.left + 1; cellPos.x < right - 1; ++cellPos.x, ++totalCells)
+                    determineState(cellPos, countCellsFast(cellPos));
+            // 2) Top and bottom rows
+            for (cellPos.y = fixedRect.top; cellPos.y < bottom; cellPos.y += fixedRect.height - 1)
+                for (cellPos.x = fixedRect.left; cellPos.x < right; ++cellPos.x, ++totalCells)
+                    determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
+            // 3) Left and right columns
+            for (cellPos.x = fixedRect.left; cellPos.x < right; cellPos.x += fixedRect.width - 1)
+                for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y, ++totalCells)
+                    determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
+            readBoard = writeBoard;
+
+            // std::cout << fixedRect.width << " x " << fixedRect.height << " block simulated at {" <<
+            // fixedRect.left << ", " << fixedRect.top << ", " << right << ", " << bottom << "} - " << totalCells << " cells simulated\n";
+        }
+    }
 }
 
 void Board::paintCell(const sf::Vector2i& pos, bool state)
@@ -131,6 +207,7 @@ void Board::paintLine(const sf::Vector2i& startPos, const sf::Vector2i& endPos, 
 
 void Board::paintLine(const sf::Vector2i& pos, bool state)
 {
+    //std::cout << "paintLine()\n";
     if (paintingLine)
         paintLine(lastLinePos, pos, state);
     else
@@ -143,6 +220,7 @@ void Board::paintLine(const sf::Vector2i& pos, bool state)
 
 void Board::finishLine()
 {
+    //std::cout << "finishLine()\n";
     paintingLine = false;
 }
 
@@ -150,27 +228,33 @@ void Board::paintBlock(const sf::IntRect& rect, bool state)
 {
     // Calculate the proper block of cells to paint
     auto fixedRect = fixRectangle(rect);
+    if (fixedRect.width > 0 && fixedRect.height > 0)
+    {
+        // Paint the cells
+        for (unsigned y = 0; y < fixedRect.height; ++y)
+            for (unsigned x = 0; x < fixedRect.width; ++x)
+                setCell(sf::Vector2u(fixedRect.left + x, fixedRect.top + y), state);
 
-    // Paint the cells
-    for (unsigned y = 0; y < fixedRect.height; ++y)
-        for (unsigned x = 0; x < fixedRect.width; ++x)
-            setCell(sf::Vector2u(fixedRect.left + x, fixedRect.top + y), state);
+        std::cout << fixedRect.width << " x " << fixedRect.height << " block painted.\n";
+    }
 }
 
 void Board::copyBlock(const sf::IntRect& rect)
 {
     // Calculate the proper block of cells to copy
     auto fixedRect = fixRectangle(rect);
+    if (fixedRect.width > 0 && fixedRect.height > 0)
+    {
+        // Resize the buffer
+        copiedCells.resize(fixedRect.width, fixedRect.height);
 
-    // Resize the buffer
-    copiedCells.resize(fixedRect.width, fixedRect.height);
+        // Copy the cells into the buffer
+        for (unsigned y = 0; y < fixedRect.height; ++y)
+            for (unsigned x = 0; x < fixedRect.width; ++x)
+                copiedCells(x, y) = board[readBoard](fixedRect.left + x, fixedRect.top + y);
 
-    // Copy the cells into the buffer
-    for (unsigned y = 0; y < fixedRect.height; ++y)
-        for (unsigned x = 0; x < fixedRect.width; ++x)
-            copiedCells(x, y) = board[readBoard](fixedRect.left + x, fixedRect.top + y);
-
-    std::cout << fixedRect.width << " x " << fixedRect.height << " block copied at {" << fixedRect.left << ", " << fixedRect.top << "}\n";
+        std::cout << fixedRect.width << " x " << fixedRect.height << " block copied at {" << fixedRect.left << ", " << fixedRect.top << "}\n";
+    }
 }
 
 void Board::pasteBlock(const sf::Vector2i& pos)
@@ -208,6 +292,7 @@ bool Board::loadFromFile(const std::string& filename)
         boardImage.create(newWidth, newHeight);
         updateImage();
         updateTexture();
+        updateBorderSize();
     }
     return status;
 }
@@ -223,7 +308,7 @@ void Board::updateImage()
     sf::Vector2u cellPos;
     for (cellPos.y = 0; cellPos.y < board[readBoard].height(); ++cellPos.y)
         for (cellPos.x = 0; cellPos.x < board[readBoard].width(); ++cellPos.x)
-            boardImage.setPixel(cellPos.x, cellPos.y, cellColors[board[readBoard](cellPos)]);
+            setPixel(cellPos.x, cellPos.y, board[readBoard](cellPos));
 }
 
 void Board::updateTexture()
@@ -240,15 +325,16 @@ void Board::updateTexture()
 void Board::draw(sf::RenderTarget& window, sf::RenderStates states) const
 {
     window.draw(boardSprite);
+    window.draw(border);
 }
 
-short Board::countCellsNormal(const sf::Vector2u& pos)
+unsigned Board::countCellsFast(const sf::Vector2u& pos)
 {
     // WARNING: This function assumes the following is true:
     // if (pos.x > 0 && pos.y > 0 && pos.x < board.width() - 1 && pos.y < board.height() - 1)
     // Which means that you should not use this function on cells that are on the edge of the board!
     // This is only done for performance reasons.
-    short count = 0;
+    unsigned count = 0;
     sf::Vector2u startPos(pos.x - 1, pos.y - 1);
     sf::Vector2u endPos(pos.x + 1, pos.y + 1);
     sf::Vector2u tempPos;
@@ -257,49 +343,82 @@ short Board::countCellsNormal(const sf::Vector2u& pos)
     for (tempPos.y = startPos.y; tempPos.y <= endPos.y; ++tempPos.y)
         for (tempPos.x = startPos.x; tempPos.x <= endPos.x; ++tempPos.x)
             if (tempPos != pos) // Ignore the center cell
-                count += board[readBoard](tempPos); // Increment the count if the cell is live
+                count += (board[readBoard](tempPos) != 0); // Increment the count if the cell is live
 
     return count;
 }
 
-short Board::countCellsToroidal(const sf::Vector2u& pos)
+unsigned Board::countCellsNormal(const sf::Vector2u& pos)
 {
-    short count = 0;
+    unsigned count = 0;
+    sf::Vector2u startPos(std::max(pos.x - 1, 0U), std::max(pos.y - 1, 0U));
+    sf::Vector2u endPos(std::min(pos.x + 1, width() - 1), std::min(pos.y + 1, height() - 1));
     sf::Vector2u tempPos;
+
+    // Iterate through a 3x3 grid around the cell
+    for (tempPos.y = startPos.y; tempPos.y <= endPos.y; ++tempPos.y)
+        for (tempPos.x = startPos.x; tempPos.x <= endPos.x; ++tempPos.x)
+            if (tempPos != pos) // Ignore the center cell
+                count += (board[readBoard](tempPos) != 0); // Increment the count if the cell is live
+
+    return count;
+}
+
+unsigned Board::countCellsToroidal(const sf::Vector2u& pos, sf::Rect<unsigned>& rect)
+{
+    unsigned count = 0;
+    sf::Vector2u tempPos;
+    unsigned bottom = rect.top + rect.height - 1;
+    unsigned right = rect.left + rect.width - 1;
 
     // Pre-calculate the ranges of cells to count
     unsigned rangeX[3] = {pos.x - 1, pos.x, pos.x + 1};
     unsigned rangeY[3] = {pos.y - 1, pos.y, pos.y + 1};
-    if (pos.x == 0)
-        rangeX[0] = board[readBoard].width() - 1;
-    else if (pos.x == board[readBoard].width() - 1)
-        rangeX[2] = 0;
-    if (pos.y == 0)
-        rangeY[0] = board[readBoard].height() - 1;
-    else if (pos.y == board[readBoard].height() - 1)
-        rangeY[2] = 0;
+    if (pos.x == rect.left)
+        rangeX[0] = right;
+    else if (pos.x == right)
+        rangeX[2] = rect.left;
+    if (pos.y == rect.top)
+        rangeY[0] = bottom;
+    else if (pos.y == bottom)
+        rangeY[2] = rect.top;
 
     // Iterate through the ranges as a wrapped-around 3x3 grid
     for (unsigned y: rangeY)
         for (unsigned x: rangeX)
             if (x != pos.x || y != pos.y) // Ignore the center cell
-                count += board[readBoard](x, y); // Increment the count if the cell is live
+                count += (board[readBoard](x, y) != 0); // Increment the count if the cell is live
 
     return count;
 }
 
-void Board::determineState(const sf::Vector2u& pos, short count)
+void Board::determineState(const sf::Vector2u& pos, unsigned count)
 {
     // Uses the rule set lookup table, and updates the state of the cell to the new state
-    bool currentState = board[readBoard](pos);
-    setCell(pos, rules.getRule(currentState, count));
+    bool currentState = (board[readBoard](pos) != 0);
+    incrementCell(pos, rules.getRule(currentState, count));
 }
 
 void Board::setCell(const sf::Vector2u& pos, bool state)
 {
     board[writeBoard](pos) = state;
-    boardImage.setPixel(pos.x, pos.y, cellColors[state]);
+    setPixel(pos.x, pos.y, state);
     needToUpdateTexture = true;
+}
+
+void Board::incrementCell(const sf::Vector2u& pos, bool state)
+{
+    char& cell = board[writeBoard](pos);
+    cell = std::min(board[readBoard](pos) * state + state, static_cast<int>(cellColors.size() - 1));
+    setPixel(pos.x, pos.y, cell);
+    needToUpdateTexture = true;
+}
+
+void Board::setPixel(unsigned x, unsigned y, char state)
+{
+    // TODO: This will need to do some checking in case the logical cell states are out of bounds of the colors.
+    // This will only need to be done when the colors can be changed with a GUI while the program is running.
+    boardImage.setPixel(x, y, cellColors[state].toColor());
 }
 
 bool Board::inBounds(const sf::Vector2i& pos) const
@@ -312,20 +431,27 @@ void Board::toggle(unsigned& val) const
     val = !(static_cast<bool>(val));
 }
 
+void Board::updateBorderSize()
+{
+    border.setSize(sf::Vector2f(width(), height()));
+}
+
 sf::Rect<unsigned> Board::fixRectangle(const sf::IntRect& rect) const
 {
-    // The position should be the top-left corner of the rectangle,
-    // and the size should be the size of the rectangle without going out of bounds.
-    // Then, make sure the position and size are within bounds of the board.
-    unsigned boardWidth = board[readBoard].width();
-    unsigned boardHeight = board[readBoard].height();
-    sf::Rect<unsigned> fixedRect(std::min(std::max(std::min(rect.left, rect.left + rect.width), 0), (int)boardWidth - 1),
-                           std::min(std::max(std::min(rect.top, rect.top + rect.height), 0), (int)boardHeight - 1),
-                           std::max(std::max(-rect.width, rect.width), 0),
-                           std::max(std::max(-rect.height, rect.height), 0));
-    if (fixedRect.left + fixedRect.width >= boardWidth)
-        fixedRect.width = boardWidth - fixedRect.left;
-    if (fixedRect.top + fixedRect.height >= boardHeight)
-        fixedRect.height = boardHeight - fixedRect.top;
-    return fixedRect;
+    // TODO: Make sure this works properly on negatively sized rectangles!
+    // (Doesn't apply until the selection box can go negative)
+
+    // Convert the rectangle into coordinates of 2 corners
+    // Also make sure everything is within bounds
+    int boardWidth = board[readBoard].width();
+    int boardHeight = board[readBoard].height();
+    sf::Vector2u topLeft(std::min(std::max(rect.left, 0), boardWidth),
+                         std::min(std::max(rect.top, 0), boardHeight));
+    sf::Vector2u bottomRight(std::min(std::max(rect.left + rect.width, 0), boardWidth),
+                             std::min(std::max(rect.top + rect.height, 0), boardHeight));
+
+    // Then convert the coordinates back into a rectangle
+    return sf::Rect<unsigned>(topLeft.x, topLeft.y,
+        bottomRight.x - topLeft.x,
+        bottomRight.y - topLeft.y);
 }

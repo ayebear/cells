@@ -218,12 +218,14 @@ std::vector<std::string> StringUtils::splitArrayString(std::string str)
     return vec;
 }
 
-std::string joinArrayString(const std::vector<std::string>& vec)
+std::string StringUtils::joinArrayString(const std::vector<std::string>& vec)
 {
     // Join a vector back together into a properly formatted string
     std::string str = "{";
     for (auto& elem: vec)
-        str += elem;
+        str += elem + ",";
+    if (str.back() == ',')
+        str.pop_back();
     str += "}";
     return str;
 }

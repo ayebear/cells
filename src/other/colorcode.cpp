@@ -4,6 +4,7 @@
 #include "colorcode.h"
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 ColorCode::ColorCode()
 {
@@ -23,6 +24,16 @@ ColorCode::ColorCode(const sf::Color& col)
 ColorCode::ColorCode(unsigned char r, unsigned char g, unsigned char b)
 {
     setRGB(r, g, b);
+}
+
+ColorCode& ColorCode::operator=(const std::string& str)
+{
+    return setString(str);
+}
+
+ColorCode& ColorCode::operator=(const sf::Color& col)
+{
+    return setColor(col);
 }
 
 ColorCode& ColorCode::setString(const std::string& str)
@@ -74,36 +85,40 @@ bool ColorCode::strToColor(const std::string& str, sf::Color& col, std::string& 
         if ((c >= '0' && c <= '9') ||
             (c >= 'A' && c <= 'F') ||
             (c >= 'a' && c <= 'f'))
-            validHex += c;
+            validHex += toupper(c);
     }
     // Supports #000 and #000000 formats
     unsigned length = validHex.size();
-    if (length == 6 || length == 3)
+    if (length == 3)
+    {
+        // Convert #ABC to #AABBCC
+        std::string tmp = validHex;
+        validHex.resize(6);
+        validHex[0] = tmp[0];
+        validHex[1] = tmp[0];
+        validHex[2] = tmp[1];
+        validHex[3] = tmp[1];
+        validHex[4] = tmp[2];
+        validHex[5] = tmp[2];
+        length = validHex.size();
+    }
+    if (length == 6)
     {
         unsigned hexWidth = length / 3;
-        col.r = hexStrToChar(validHex.substr(0, hexWidth));
-        col.g = hexStrToChar(validHex.substr(1 * hexWidth, hexWidth));
-        col.b = hexStrToChar(validHex.substr(2 * hexWidth, hexWidth));
+        col.r = hexStrToInt(validHex.substr(0, hexWidth));
+        col.g = hexStrToInt(validHex.substr(1 * hexWidth, hexWidth));
+        col.b = hexStrToInt(validHex.substr(2 * hexWidth, hexWidth));
         outStr = "#" + validHex;
         status = true;
     }
     return status;
 }
 
-unsigned char ColorCode::hexStrToChar(const std::string& str) const
+unsigned ColorCode::hexStrToInt(const std::string& str) const
 {
-    unsigned char out;
+    unsigned out;
     std::stringstream ss;
     ss << std::hex << str;
     ss >> out;
     return out;
-
-    /*unsigned char out = 0;
-    unsigned char factor = 16;
-    for (unsigned char c: str)
-    {
-        out += (factor * c);
-        factor *= 16;
-    }
-    return out;*/
 }

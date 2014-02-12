@@ -18,6 +18,8 @@ class ColorCode
         ColorCode(const std::string& str);
         ColorCode(const sf::Color& col);
         ColorCode(unsigned char r, unsigned char g, unsigned char b);
+        ColorCode& operator=(const std::string& str);
+        ColorCode& operator=(const sf::Color& col);
         ColorCode& setString(const std::string& str);
         ColorCode& setColor(const sf::Color& col);
         ColorCode& setRGB(unsigned char r, unsigned char g, unsigned char b);
@@ -27,7 +29,7 @@ class ColorCode
     private:
         void colorToStr(const sf::Color& col, std::string& str) const;
         bool strToColor(const std::string& str, sf::Color& col, std::string& outStr) const;
-        unsigned char hexStrToChar(const std::string& str) const;
+        unsigned hexStrToInt(const std::string& str) const;
 
         sf::Color color;
         std::string colorStr;

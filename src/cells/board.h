@@ -8,6 +8,7 @@
 #include <SFML/Graphics.hpp>
 #include "matrix.h"
 #include "ruleset.h"
+#include "colorcode.h"
 
 /*
 This class is used for simulating cellular automata.
@@ -21,14 +22,26 @@ class Board: public sf::Drawable
 
         Board();
         Board(unsigned width, unsigned height);
+
+        // Board size
         void resize(unsigned width, unsigned height, bool preserve = true); // Resizes the board, can be non-destructive
         unsigned width() const;
         unsigned height() const;
 
-        // Simulation
-        void simulate(unsigned count = 1); // Runs a number of generations
+        // Cell colors
+        void setColors(const std::vector<sf::Color>& colors);
+        void setColors(const std::vector<std::string>& colors);
+        std::vector<std::string> getColorStrings() const;
+        void resetColors(); // Resets the colors to the default of black and white
+
+        // Rule settings
         void setRules(const std::string& ruleString = defaultRuleString); // Sets the rules from a rule string (see the RuleSet class for more information)
+        void setRules(const RuleSet& newRules); // Sets the rules from another rule set object
         const std::string& getRules() const; // Returns the rules in the same string format as above
+
+        // Simulation
+        void simulate(bool toroidal = true); // Runs a single generation on the entire board
+        void simulate(const sf::IntRect& rect, bool toroidal = true); // Runs a single generation on the specified area
 
         // Cell manipulation
         void paintCell(const sf::Vector2i& pos, bool state); // Sets the state of a cell, does bounds checking
@@ -52,21 +65,25 @@ class Board: public sf::Drawable
 
     private:
         // These are used for simulation
-        short countCellsNormal(const sf::Vector2u& pos); // Counts neighboring cells at a position, this is not toroidal and does no bounds checking
-        short countCellsToroidal(const sf::Vector2u& pos); // Counts neighboring cells at a position, this is toroidal
-        void determineState(const sf::Vector2u& pos, short count); // Determines the next state of the cell based on the number of neighboring cells
+        unsigned countCellsFast(const sf::Vector2u& pos); // Counts neighboring cells at a position, this is not toroidal and does no bounds checking
+        unsigned countCellsNormal(const sf::Vector2u& pos); // Counts neighboring cells at a position, this is not toroidal
+        unsigned countCellsToroidal(const sf::Vector2u& pos, sf::Rect<unsigned>& rect); // Counts neighboring cells at a position, this is toroidal
+        void determineState(const sf::Vector2u& pos, unsigned count); // Determines the next state of the cell based on the number of neighboring cells
 
         // Other functions
         void setCell(const sf::Vector2u& pos, bool state); // Sets the state of a cell
+        void incrementCell(const sf::Vector2u& pos, bool state); // Sets the state of a cell (also increments the color)
+        void setPixel(unsigned x, unsigned y, char state); // Set the graphical state of a cell
         bool inBounds(const sf::Vector2i& pos) const; // Returns if the coordinates are in bounds of the board
         void toggle(unsigned& val) const; // Toggles an unsigned int like a bool
+        void updateBorderSize(); // Updates the size of the border
         sf::Rect<unsigned> fixRectangle(const sf::IntRect& rect) const; // Takes any rectangle and returns one within bounds of the board
 
         // The rule set
         RuleSet rules;
 
         // Logical board
-        BoolMatrix board[2]; // Holds the logical states of the cells
+        Matrix<char> board[2]; // Holds the logical states of the cells
         unsigned readBoard; // Which layer should be read from
         unsigned writeBoard; // Which layer should be written to
         // Needs to switch between layers to properly simulate everything
@@ -76,13 +93,14 @@ class Board: public sf::Drawable
         sf::Image boardImage; // Graphical image in system memory
         sf::Texture boardTexture; // Graphical image in GPU memory
         sf::Sprite boardSprite; // Drawable sprite
-        sf::Color cellColors[2]; // The colors used for the cells
+        sf::RectangleShape border; // The box that shows where the borders are
+        std::vector<ColorCode> cellColors; // The colors used for the cells
         bool needToUpdateTexture;
 
         // Other variables
         sf::Vector2i lastLinePos;
         bool paintingLine;
-        BoolMatrix copiedCells;
+        Matrix<char> copiedCells;
 };
 
 #endif

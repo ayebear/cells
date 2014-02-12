@@ -9,13 +9,15 @@
 #include <string>
 #include "option.h"
 
-using namespace std;
+//using namespace std;
+using std::string;
 
 /*
 TODO:
     Get rid of StringUtils dependency.
     Get rid of using namespace std.
-    Config file writing should preserve formatting and comments.
+    Handle arrays spanned across multiple lines.
+    Writing should preserve formatting and comments.
         Maybe it could "merge" the contents into the file, new values in existing options would be updated,
             new options would be appended to the end of the file.
         In order for this to do this, it must either read the file before writing (which is slow), or it must
@@ -32,8 +34,8 @@ class ConfigFile
 {
     public:
         // Types used to store the options
-        typedef map<string,Option> Section;
-        typedef map<string,Section> ConfigMap;
+        typedef std::map<string,Option> Section;
+        typedef std::map<string,Section> ConfigMap;
 
         // Constructors
         ConfigFile(bool = false); // Would create an empty config file object
@@ -68,7 +70,7 @@ class ConfigFile
         void clear(); // Clears all of the sections and options in memory, but keeps the filename
 
     private:
-        void parseLines(vector<string>&); // Processes the lines in memory and adds them to the options map
+        void parseLines(std::vector<string>&); // Processes the lines in memory and adds them to the options map
         bool isSection(const string&) const; // Returns true if the line is a section header
         void parseSectionLine(const string&, string&); // Processes a section header line and adds a section to the map
         void parseOptionLine(const string&, const string&); // Processes an option line and adds an option to the map
