@@ -23,11 +23,11 @@ void SelectionBox::setCorner(const sf::Vector2i& pos, bool square)
 {
     if (square)
     {
-        int squareWidth = std::max(pos.x - rect.left, pos.y - rect.top);
+        int squareWidth = std::max(pos.x - rect.left + 1, pos.y - rect.top + 1);
         setSize(squareWidth, squareWidth);
     }
     else
-        setSize(pos.x - rect.left, pos.y - rect.top);
+        setSize(pos.x - rect.left + 1, pos.y - rect.top + 1);
 }
 
 void SelectionBox::setSize(const sf::Vector2i& size)
@@ -71,6 +71,11 @@ sf::Vector2u SelectionBox::getSize() const
 const sf::IntRect& SelectionBox::getRect() const
 {
     return rect;
+}
+
+sf::Vector2i SelectionBox::getPosition() const
+{
+    return sf::Vector2i(rect.left, rect.top);
 }
 
 void SelectionBox::draw(sf::RenderTarget& window, sf::RenderStates states) const

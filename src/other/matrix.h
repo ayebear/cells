@@ -105,27 +105,29 @@ class Matrix
 
             bool status = false;
 
-            // Create a buffer for the file
-            unsigned fileSize = (matrixSize / 8) + 8; // 8 extra bytes for width and height
-            std::vector<char> fileData(fileSize, 0);
-
-            // Store the width and height in the buffer
-            // std::cout << "Writing " << matrixWidth << " x " << matrixHeight << " to buffer\n";
-            writeUintToString(fileData.data(), matrixWidth);
-            writeUintToString(fileData.data() + 4, matrixHeight);
-
-            // Pack the bits into the buffer
-            for (unsigned i = 0; i < matrixSize; ++i)
-                fileData[(i / 8) + 8] |= (((elements[i] != 0) & 0x1) << (i % 8));
-
-            // Write the buffer to the file
-            std::ofstream outFile(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-            if (outFile.is_open())
+            if (!filename.empty())
             {
-                outFile.seekp(0, std::ios::beg);
-                outFile.write(fileData.data(), fileSize);
-                outFile.close();
-                status = true;
+                // Create a buffer for the file
+                unsigned fileSize = (matrixSize / 8) + 8; // 8 extra bytes for width and height
+                std::vector<char> fileData(fileSize, 0);
+
+                // Store the width and height in the buffer
+                writeUintToString(fileData.data(), matrixWidth);
+                writeUintToString(fileData.data() + 4, matrixHeight);
+
+                // Pack the bits into the buffer
+                for (unsigned i = 0; i < matrixSize; ++i)
+                    fileData[(i / 8) + 8] |= (((elements[i] != 0) & 0x1) << (i % 8));
+
+                // Write the buffer to the file
+                std::ofstream outFile(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+                if (outFile.is_open())
+                {
+                    outFile.seekp(0, std::ios::beg);
+                    outFile.write(fileData.data(), fileSize);
+                    outFile.close();
+                    status = true;
+                }
             }
             return status;
         }
@@ -138,40 +140,43 @@ class Matrix
             // in memory to whatever was specified in the file.
             bool status = false;
 
-            std::ifstream inFile;
-            inFile.open(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
-            if (inFile.is_open())
+            if (!filename.empty())
             {
-                // Get the file size
-                unsigned fileSize = inFile.tellg();
-                if (fileSize > 8)
+                std::ifstream inFile;
+                inFile.open(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+                if (inFile.is_open())
                 {
-                    // Allocate a buffer for the file
-                    std::vector<char> fileData(fileSize, 0);
+                    // Get the file size
+                    unsigned fileSize = inFile.tellg();
+                    if (fileSize > 8)
+                    {
+                        // Allocate a buffer for the file
+                        std::vector<char> fileData(fileSize, 0);
 
-                    // Read the file into the buffer
-                    inFile.seekg(0, std::ios::beg);
-                    inFile.read(fileData.data(), fileSize);
-                    inFile.close();
+                        // Read the file into the buffer
+                        inFile.seekg(0, std::ios::beg);
+                        inFile.read(fileData.data(), fileSize);
+                        inFile.close();
 
-                    // Get the new matrix size and resize the matrix
-                    unsigned newWidth = readUintFromString(fileData.data());
-                    unsigned newHeight = readUintFromString(fileData.data() + 4);
-                    resize(newWidth, newHeight, false);
+                        // Get the new matrix size and resize the matrix
+                        unsigned newWidth = readUintFromString(fileData.data());
+                        unsigned newHeight = readUintFromString(fileData.data() + 4);
+                        resize(newWidth, newHeight, false);
 
-                    // std::cout << "loadFromFile(): newWidth = " << newWidth << ", newHeight = " << newHeight << "\n";
+                        // std::cout << "loadFromFile(): newWidth = " << newWidth << ", newHeight = " << newHeight << "\n";
 
-                    // Unpack the bits into the matrix
-                    unsigned minSize = std::min(((fileSize - 8) * 8), matrixSize); // In case the file is larger or smaller
-                    for (unsigned i = 0; i < minSize; ++i)
-                        elements[i] = ((fileData[(i / 8) + 8] >> (i % 8)) & 0x1);
+                        // Unpack the bits into the matrix
+                        unsigned minSize = std::min(((fileSize - 8) * 8), matrixSize); // In case the file is larger or smaller
+                        for (unsigned i = 0; i < minSize; ++i)
+                            elements[i] = ((fileData[(i / 8) + 8] >> (i % 8)) & 0x1);
 
-                    // Fill the remaining part of the matrix if the file was not large enough
-                    if (minSize < matrixSize)
-                        for (unsigned i = minSize; i < matrixSize; ++i)
-                            elements[i] = false;
+                        // Fill the remaining part of the matrix if the file was not large enough
+                        if (minSize < matrixSize)
+                            for (unsigned i = minSize; i < matrixSize; ++i)
+                                elements[i] = false;
 
-                    status = true;
+                        status = true;
+                    }
                 }
             }
             return status;

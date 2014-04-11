@@ -23,6 +23,7 @@ class SelectionBox: public sf::Drawable
         bool isMinimumSize() const; // Returns true if the current size is the minimum size
         sf::Vector2u getSize() const; // Gets the size of the rectangle
         const sf::IntRect& getRect() const; // Returns the logical rectangle
+        sf::Vector2i getPosition() const; // Returns the top-left corner position
         void draw(sf::RenderTarget& window, sf::RenderStates states) const;
 
     private:

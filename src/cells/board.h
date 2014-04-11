@@ -9,6 +9,7 @@
 #include "matrix.h"
 #include "ruleset.h"
 #include "colorcode.h"
+#include "configoption.h"
 
 /*
 This class is used for simulating cellular automata.
@@ -31,17 +32,25 @@ class Board: public sf::Drawable
         // Cell colors
         void setColors(const std::vector<sf::Color>& colors);
         void setColors(const std::vector<std::string>& colors);
+        void setColors(const cfg::Option& colors, bool updateBoard = false);
         std::vector<std::string> getColorStrings() const;
+        const sf::Color& getFirstColor() const;
         void resetColors(); // Resets the colors to the default of black and white
+        void reverseColors(); // Reverses the order of the current colors
 
         // Rule settings
         void setRules(const std::string& ruleString = defaultRuleString); // Sets the rules from a rule string (see the RuleSet class for more information)
         void setRules(const RuleSet& newRules); // Sets the rules from another rule set object
         const std::string& getRules() const; // Returns the rules in the same string format as above
+        RuleSet& accessRules(); // Returns a reference to the rule set
 
         // Simulation
         void simulate(bool toroidal = true); // Runs a single generation on the entire board
         void simulate(const sf::IntRect& rect, bool toroidal = true); // Runs a single generation on the specified area
+        void setMaxSpeed(float speed);
+        bool play(); // Returns true if playing, false if paused
+        bool isPlaying() const;
+        void update(); // Simulates the board if playing is true
 
         // Cell manipulation
         void paintCell(const sf::Vector2i& pos, bool state); // Sets the state of a cell, does bounds checking
@@ -54,11 +63,13 @@ class Board: public sf::Drawable
 
         // Board loading/saving
         void clear(); // Clears the entire board
+        void addRandom(); // Adds some random cells
         bool saveToFile(const std::string& filename) const; // Saves the board to a file
         bool loadFromFile(const std::string& filename); // Loads the board from a file
         bool saveToImageFile(const std::string& filename) const; // Saves the graphical board to an image file
 
         // Rendering
+        bool setBoardState(bool state); // Sets the color of the border (returns true if changed)
         void updateImage(); // Updates the pixels of the image from the logical array
         void updateTexture(); // Copies the image to the texture if necessary
         void draw(sf::RenderTarget& window, sf::RenderStates states) const; // Draw to the window
@@ -78,6 +89,7 @@ class Board: public sf::Drawable
         void toggle(unsigned& val) const; // Toggles an unsigned int like a bool
         void updateBorderSize(); // Updates the size of the border
         sf::Rect<unsigned> fixRectangle(const sf::IntRect& rect) const; // Takes any rectangle and returns one within bounds of the board
+        void updateMaxState();
 
         // The rule set
         RuleSet rules;
@@ -88,19 +100,30 @@ class Board: public sf::Drawable
         unsigned writeBoard; // Which layer should be written to
         // Needs to switch between layers to properly simulate everything
         // Note that both of these variables are the same when a simulation is not in progress
+        bool playing;
 
         // Graphical board
         sf::Image boardImage; // Graphical image in system memory
         sf::Texture boardTexture; // Graphical image in GPU memory
         sf::Sprite boardSprite; // Drawable sprite
         sf::RectangleShape border; // The box that shows where the borders are
+        static const sf::Color borderColors[2];
+        bool borderState;
         std::vector<ColorCode> cellColors; // The colors used for the cells
         bool needToUpdateTexture;
+
+        // Simulation speed limiter
+        sf::Clock simTimer;
+        float maxSpeed;
+        float maxTime;
+        static const float unlimitedSpeed;
 
         // Other variables
         sf::Vector2i lastLinePos;
         bool paintingLine;
         Matrix<char> copiedCells;
+        char maxState;
+        int maxStateInt;
 };
 
 #endif

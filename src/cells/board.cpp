@@ -3,24 +3,33 @@
 
 #include "board.h"
 #include <iostream>
+#include <algorithm>
 
 const char* Board::defaultRuleString = "B3/S23";
+const float Board::unlimitedSpeed = 60.0f;
+const sf::Color Board::borderColors[] = {
+    sf::Color(128, 128, 128),
+    sf::Color::Green
+};
 
 Board::Board()
 {
+    playing = false;
+    borderState = true;
     resetColors();
     readBoard = 0;
     writeBoard = 0;
     needToUpdateTexture = true;
     paintingLine = false;
     boardSprite.setPosition(0, 0);
+    setMaxSpeed(unlimitedSpeed);
     setRules();
 
     // Setup border
     border.setPosition(0, 0);
     updateBorderSize();
     border.setFillColor(sf::Color::Transparent);
-    border.setOutlineColor(sf::Color::Green);
+    border.setOutlineColor(borderColors[borderState]);
     border.setOutlineThickness(1);
 }
 
@@ -41,11 +50,11 @@ void Board::resize(unsigned width, unsigned height, bool preserve)
             board[0].clear();
             board[1].clear();
         }
-        
+
         // Resize the logical arrays
         board[0].resize(width, height);
         board[1].resize(width, height);
-        
+
         // Create a new image with this size
         boardImage.create(width, height, cellColors.front().toColor());
         if (preserve)
@@ -72,6 +81,7 @@ void Board::setColors(const std::vector<sf::Color>& colors)
         cellColors.emplace_back(col);
     if (cellColors.size() < 2)
         resetColors();
+    updateMaxState();
 }
 
 void Board::setColors(const std::vector<std::string>& colors)
@@ -81,6 +91,22 @@ void Board::setColors(const std::vector<std::string>& colors)
         cellColors.emplace_back(colStr);
     if (cellColors.size() < 2)
         resetColors();
+    updateMaxState();
+}
+
+void Board::setColors(const cfg::Option& colors, bool updateBoard)
+{
+    cellColors.clear();
+    for (const auto& opt: colors)
+        cellColors.emplace_back(opt.toString());
+    if (cellColors.size() < 2)
+        resetColors();
+    updateMaxState();
+    if (updateBoard)
+    {
+        updateImage();
+        updateTexture();
+    }
 }
 
 std::vector<std::string> Board::getColorStrings() const
@@ -91,11 +117,24 @@ std::vector<std::string> Board::getColorStrings() const
     return colorStrs;
 }
 
+const sf::Color& Board::getFirstColor() const
+{
+    return cellColors[0].toColor();
+}
+
 void Board::resetColors()
 {
     cellColors.clear();
     cellColors.emplace_back(sf::Color::Black);
     cellColors.emplace_back(sf::Color::White);
+    updateMaxState();
+}
+
+void Board::reverseColors()
+{
+    std::reverse(cellColors.begin(), cellColors.end());
+    updateImage();
+    updateTexture();
 }
 
 void Board::setRules(const std::string& ruleString)
@@ -113,6 +152,11 @@ const std::string& Board::getRules() const
     return rules.toString();
 }
 
+RuleSet& Board::accessRules()
+{
+    return rules;
+}
+
 void Board::simulate(bool toroidal)
 {
     simulate(sf::IntRect(0, 0, width(), height()), toroidal);
@@ -121,7 +165,9 @@ void Board::simulate(bool toroidal)
 void Board::simulate(const sf::IntRect& rect, bool toroidal)
 {
     auto fixedRect = fixRectangle(rect);
-    if (fixedRect.width > 0 && fixedRect.height > 0)
+    // Make sure the simulation area is at least 3x3
+    if (fixedRect.width >= 3 && fixedRect.height >= 3 &&
+        (maxSpeed >= (unlimitedSpeed - 2.0f) || simTimer.getElapsedTime().asSeconds() >= maxTime))
     {
         /*
         The order in which the cells are simulated:
@@ -130,10 +176,12 @@ void Board::simulate(const sf::IntRect& rect, bool toroidal)
         3 1 1 1 3
         3 1 1 1 3
         2 2 2 2 2
+        This is so we can skip bounds checking and toroidal wrap-around algorithms for most of the cells.
         */
 
-        sf::Vector2u cellPos;
+        simTimer.restart();
         toggle(writeBoard);
+        sf::Vector2u cellPos;
         unsigned bottom = fixedRect.top + fixedRect.height;
         unsigned right = fixedRect.left + fixedRect.width;
         unsigned totalCells = 0;
@@ -142,27 +190,48 @@ void Board::simulate(const sf::IntRect& rect, bool toroidal)
         if (fixedRect.width < width() || fixedRect.height < height()) // If this is a partial simulation
             board[writeBoard] = board[readBoard]; // Copy the latest board to the board being written to
 
-        // Make sure the simulation area is at least 3x3
-        if (fixedRect.width >= 3 && fixedRect.height >= 3)
-        {
-            // 1) Go through the main part of the cells except for the edges
-            for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y)
-                for (cellPos.x = fixedRect.left + 1; cellPos.x < right - 1; ++cellPos.x, ++totalCells)
-                    determineState(cellPos, countCellsFast(cellPos));
-            // 2) Top and bottom rows
-            for (cellPos.y = fixedRect.top; cellPos.y < bottom; cellPos.y += fixedRect.height - 1)
-                for (cellPos.x = fixedRect.left; cellPos.x < right; ++cellPos.x, ++totalCells)
-                    determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
-            // 3) Left and right columns
-            for (cellPos.x = fixedRect.left; cellPos.x < right; cellPos.x += fixedRect.width - 1)
-                for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y, ++totalCells)
-                    determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
-            readBoard = writeBoard;
+        // 1) Go through the main part of the cells except for the edges
+        for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y)
+            for (cellPos.x = fixedRect.left + 1; cellPos.x < right - 1; ++cellPos.x, ++totalCells)
+                determineState(cellPos, countCellsFast(cellPos));
+        // 2) Top and bottom rows
+        for (cellPos.y = fixedRect.top; cellPos.y < bottom; cellPos.y += fixedRect.height - 1)
+            for (cellPos.x = fixedRect.left; cellPos.x < right; ++cellPos.x, ++totalCells)
+                determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
+        // 3) Left and right columns
+        for (cellPos.x = fixedRect.left; cellPos.x < right; cellPos.x += fixedRect.width - 1)
+            for (cellPos.y = fixedRect.top + 1; cellPos.y < bottom - 1; ++cellPos.y, ++totalCells)
+                determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
+        readBoard = writeBoard;
 
-            // std::cout << fixedRect.width << " x " << fixedRect.height << " block simulated at {" <<
-            // fixedRect.left << ", " << fixedRect.top << ", " << right << ", " << bottom << "} - " << totalCells << " cells simulated\n";
-        }
+        // std::cout << fixedRect.width << " x " << fixedRect.height << " block simulated at {" <<
+        // fixedRect.left << ", " << fixedRect.top << ", " << right << ", " << bottom << "} - " << totalCells << " cells simulated\n";
     }
+}
+
+void Board::setMaxSpeed(float speed)
+{
+    maxSpeed = speed;
+    if (maxSpeed == 0)
+        maxSpeed = unlimitedSpeed;
+    maxTime = 1.0f / maxSpeed;
+}
+
+bool Board::play()
+{
+    playing = !playing;
+    return playing;
+}
+
+bool Board::isPlaying() const
+{
+    return playing;
+}
+
+void Board::update()
+{
+    if (playing)
+        simulate();
 }
 
 void Board::paintCell(const sf::Vector2i& pos, bool state)
@@ -235,7 +304,7 @@ void Board::paintBlock(const sf::IntRect& rect, bool state)
             for (unsigned x = 0; x < fixedRect.width; ++x)
                 setCell(sf::Vector2u(fixedRect.left + x, fixedRect.top + y), state);
 
-        std::cout << fixedRect.width << " x " << fixedRect.height << " block painted.\n";
+        //std::cout << fixedRect.width << " x " << fixedRect.height << " block painted.\n";
     }
 }
 
@@ -253,7 +322,7 @@ void Board::copyBlock(const sf::IntRect& rect)
             for (unsigned x = 0; x < fixedRect.width; ++x)
                 copiedCells(x, y) = board[readBoard](fixedRect.left + x, fixedRect.top + y);
 
-        std::cout << fixedRect.width << " x " << fixedRect.height << " block copied at {" << fixedRect.left << ", " << fixedRect.top << "}\n";
+        //std::cout << fixedRect.width << " x " << fixedRect.height << " block copied at {" << fixedRect.left << ", " << fixedRect.top << "}\n";
     }
 }
 
@@ -264,7 +333,7 @@ void Board::pasteBlock(const sf::Vector2i& pos)
         for (unsigned x = 0; x < copiedCells.width(); ++x)
             paintCell(sf::Vector2i(pos.x + x, pos.y + y), copiedCells(x, y));
 
-    std::cout << copiedCells.width() << " x " << copiedCells.height() << " block pasted.\n";
+    //std::cout << copiedCells.width() << " x " << copiedCells.height() << " block pasted.\n";
 }
 
 void Board::clear()
@@ -273,6 +342,15 @@ void Board::clear()
     for (cellPos.y = 0; cellPos.y < board[writeBoard].height(); ++cellPos.y)
         for (cellPos.x = 0; cellPos.x < board[writeBoard].width(); ++cellPos.x)
             setCell(cellPos, false);
+}
+
+void Board::addRandom()
+{
+    unsigned w = width();
+    unsigned h = height();
+    unsigned iterations = (w * h) / 8;
+    for (unsigned i = 0; i < iterations; ++i)
+        paintCell(sf::Vector2i(rand() % w, rand() % h), true);
 }
 
 bool Board::saveToFile(const std::string& filename) const
@@ -302,13 +380,25 @@ bool Board::saveToImageFile(const std::string& filename) const
     return boardImage.saveToFile(filename);
 }
 
+bool Board::setBoardState(bool state)
+{
+    bool status = false;
+    if (state != borderState)
+    {
+        border.setOutlineColor(borderColors[state]);
+        borderState = state;
+        status = true;
+    }
+    return status;
+}
+
 void Board::updateImage()
 {
     needToUpdateTexture = true;
     sf::Vector2u cellPos;
     for (cellPos.y = 0; cellPos.y < board[readBoard].height(); ++cellPos.y)
         for (cellPos.x = 0; cellPos.x < board[readBoard].width(); ++cellPos.x)
-            setPixel(cellPos.x, cellPos.y, board[readBoard](cellPos));
+            setPixel(cellPos.x, cellPos.y, std::min(board[readBoard](cellPos), maxState));
 }
 
 void Board::updateTexture()
@@ -409,15 +499,16 @@ void Board::setCell(const sf::Vector2u& pos, bool state)
 void Board::incrementCell(const sf::Vector2u& pos, bool state)
 {
     char& cell = board[writeBoard](pos);
-    cell = std::min(board[readBoard](pos) * state + state, static_cast<int>(cellColors.size() - 1));
+    if (state)
+        cell = std::min(static_cast<char>(board[readBoard](pos) + 1), maxState);
+    else
+        cell = 0;
     setPixel(pos.x, pos.y, cell);
     needToUpdateTexture = true;
 }
 
 void Board::setPixel(unsigned x, unsigned y, char state)
 {
-    // TODO: This will need to do some checking in case the logical cell states are out of bounds of the colors.
-    // This will only need to be done when the colors can be changed with a GUI while the program is running.
     boardImage.setPixel(x, y, cellColors[state].toColor());
 }
 
@@ -454,4 +545,10 @@ sf::Rect<unsigned> Board::fixRectangle(const sf::IntRect& rect) const
     return sf::Rect<unsigned>(topLeft.x, topLeft.y,
         bottomRight.x - topLeft.x,
         bottomRight.y - topLeft.y);
+}
+
+void Board::updateMaxState()
+{
+    maxState = static_cast<char>(cellColors.size() - 1);
+    maxStateInt = static_cast<int>(cellColors.size() - 1);
 }

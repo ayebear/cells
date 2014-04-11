@@ -4,64 +4,106 @@
 #include "cells.h"
 #include <iostream>
 
-const ConfigFile::ConfigMap Cells::defaultOptions = {
+const char* Cells::title = "Cells v0.4.0 Alpha";
+
+const cfg::File::ConfigMap Cells::defaultOptions = {
     {"Window",{
-        {"fullscreen", makeOption(false)},
-        {"width", makeOption(640, 0)},
-        {"height", makeOption(480, 0)},
-        {"vsync", makeOption(true)}
+        {"fullscreen", cfg::makeOption(false)},
+        {"width", cfg::makeOption(640, 0)},
+        {"height", cfg::makeOption(480, 0)},
+        {"vsync", cfg::makeOption(true)}
         }
     },
     {"Board",{
-        {"width", makeOption(640, 1)},
-        {"height", makeOption(480, 1)},
-        {"rules", makeOption<std::string>(Board::defaultRuleString)},
-        {"colors", makeOption<std::string>("{#000,#FFF}")},
-        {"saveOnExit", makeOption(true)}
+        {"width", cfg::makeOption(640, 1)},
+        {"height", cfg::makeOption(480, 1)},
+        {"rules", cfg::makeOption(Board::defaultRuleString)},
+        {"autosave", cfg::makeOption(true)}
+        }
+    },
+    {"",{
+        {"autosaveConfig", cfg::makeOption(true)}
         }
     }
 };
 
-Cells::Cells(const std::string& title):
-    config("cells.cfg", defaultOptions)
+Cells::Cells():
+    config(defaultOptions),
+    gui(board, config)
 {
+    config.loadFromFile("cells.cfg");
     // Set board settings from config file
-    config.setSection("Board");
-    board.setColors(StringUtils::splitArrayString(config["colors"].asString()));
-    board.setRules(config["rules"].asString());
-    board.resize(config["width"].asInt(), config["height"].asInt(), false);
+    config.useSection("Board");
+    // Setup some default colors if none exist
+    auto& colorOpt = config("colors");
+    if (colorOpt.size() == 0)
+    {
+        colorOpt.push() = "#000";
+        colorOpt.push() = "#FFF";
+    }
+    // Set the colors and rules
+    board.setColors(colorOpt);
+    board.setRules(config("rules").toString());
+    currentPresetRule = 0;
+
+    // Load the last board or make a new one of the configured size
+    bool status = false;
+    if (config("autosave").toBool())
+        status = board.loadFromFile("board");
+    if (!status)
+        board.resize(config("width").toInt(), config("height").toInt(), false);
 
     // Set booleans
     running = false;
     hasFocus = true;
-    simulating = false;
     panning = false;
-    mouseMovedOrClicked = false;
+    mouseMoved = false;
+    mouseClicked = false;
     changingSelection = false;
     squareSelection = false;
-    
+
     // Setup tool colors
     toolColors[Tool::Paint] = sf::Color(96, 96, 255, 128);
     toolColors[Tool::Copy] = sf::Color(255, 96, 96, 128);
     toolColors[Tool::NormalSimulator] = sf::Color(255, 255, 96, 128);
     toolColors[Tool::ToroidalSimulator] = sf::Color(96, 255, 96, 128);
-    
+
     // Setup cursor
     setTool(Tool::Paint);
     cursor.setSize(sf::Vector2i(1, 1));
     cursor.setThickness(0.5);
     cursor.setMinimumSize(sf::Vector2u(1, 1));
 
-    createWindow(title);
+    gui.loadSettings();
+
+    createWindow();
 }
 
 Cells::~Cells()
 {
-    config.setSection("Board");
-    if (config["saveOnExit"].asBool())
+    if (config("autosaveConfig", "").toBool())
     {
-        config["rules"] = board.getRules();
-        config["colors"] = StringUtils::joinArrayString(board.getColorStrings());
+        gui.saveSettings();
+        config.useSection("Board");
+
+        // Save rules
+        config("rules") = board.getRules();
+
+        // Re-parse preset rules
+        for (auto& opt: config("presetRules"))
+        {
+            board.setRules(opt.toString());
+            opt = board.getRules();
+        }
+
+        // Save colors
+        config("colors").clear();
+        auto colorStrings = board.getColorStrings();
+        for (auto& str: colorStrings)
+            config("colors").push() = str;
+
+        if (config("autosave").toBool())
+            board.saveToFile("board");
         config.writeToFile();
     }
     window.close();
@@ -82,9 +124,6 @@ void Cells::start()
 
 void Cells::handleEvents()
 {
-    // This isn't very OOP, use an event handler class or something
-    // That will allow for customizable controls as well
-
     sf::Event event;
     while (window.pollEvent(event))
     {
@@ -102,67 +141,112 @@ void Cells::handleEvents()
                 hasFocus = true;
                 break;
 
-            case sf::Event::KeyPressed:
-                handleKeyPressed(event.key);
-                break;
-
-            case sf::Event::MouseButtonPressed:
-                handleMouseButtonPressed(event.mouseButton);
-                break;
-
-            case sf::Event::MouseButtonReleased:
-                handleMouseButtonReleased(event.mouseButton);
-                break;
-
-            case sf::Event::MouseMoved:
-                handleMouseMoved(event.mouseMove);
-                break;
-
-            case sf::Event::MouseWheelMoved:
-                handleMouseWheelMoved(event.mouseWheel);
-                break;
-
             case sf::Event::Resized:
                 handleWindowResized(event.size);
                 break;
 
             default:
+                if (event.type == sf::Event::KeyPressed)
+                {
+                    if (event.key.code == sf::Keyboard::Escape)
+                        gui.toggle();
+                    else if (event.key.code == sf::Keyboard::F4 && event.key.alt)
+                        running = false;
+                }
+                if (gui.isVisible())
+                {
+                    // Have the GUI handle events
+                    if (event.type == sf::Event::MouseButtonPressed ||
+                        event.type == sf::Event::MouseButtonReleased ||
+                        event.type == sf::Event::MouseMoved)
+                    {
+                        sf::Vector2i pos;
+                        if (event.type == sf::Event::MouseMoved)
+                            pos = sf::Vector2i(event.mouseMove.x, event.mouseMove.y);
+                        else
+                            pos = sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+                        sf::Vector2f mappedPos = window.mapPixelToCoords(pos);
+                        gui.handleMouseEvent(event, mappedPos);
+                    }
+                    else
+                        gui.handleEvent(event);
+                }
+                // Have the program handle events
+                if (!board.setBoardState(!gui.hasFocus()) && !gui.hasFocus())
+                    handleOtherEvent(event);
                 break;
         }
     }
-    handleInput();
+    if (!gui.hasFocus())
+        handleInput();
+}
+
+void Cells::handleOtherEvent(const sf::Event& event)
+{
+    switch (event.type)
+    {
+        case sf::Event::KeyPressed:
+            handleKeyPressed(event.key);
+            break;
+
+        case sf::Event::MouseButtonPressed:
+            handleMouseButtonPressed(event.mouseButton);
+            break;
+
+        case sf::Event::MouseButtonReleased:
+            handleMouseButtonReleased(event.mouseButton);
+            break;
+
+        case sf::Event::MouseMoved:
+            handleMouseMoved(event.mouseMove);
+            break;
+
+        case sf::Event::MouseWheelMoved:
+            handleMouseWheelMoved(event.mouseWheel);
+            break;
+
+        default:
+            break;
+    }
 }
 
 void Cells::update()
 {
-    if (simulating)
-        board.simulate();
+    board.update();
     board.updateTexture();
+    if (gui.isVisible())
+        gui.update();
+    /*if (fpsTimer.getElapsedTime().asMilliseconds() >= 500)
+    {
+        window.setTitle(strlib::toString(1 / elapsedTime));
+        fpsTimer.restart();
+    }*/
 }
 
 void Cells::draw()
 {
-    window.clear();
+    window.clear(board.getFirstColor());
 
     window.setView(boardView);
     window.draw(board);
-    window.draw(cursor);
+    if (!gui.hasFocus())
+        window.draw(cursor);
 
-    // Will need this once there is GUI stuff
-    //window.setView(uiView);
+    window.setView(uiView);
+    window.draw(gui);
 
     window.display();
 }
 
-void Cells::createWindow(const std::string& title)
+void Cells::createWindow()
 {
     // Read settings from config file
-    config.setSection("Window");
-    int width = config["width"].asInt();
-    int height = config["height"].asInt();
-    bool fullscreen = config["fullscreen"].asBool();
-    bool vsync = config["vsync"].asBool();
-    config.setSection();
+    config.useSection("Window");
+    int width = config("width").toInt();
+    int height = config("height").toInt();
+    bool fullscreen = config("fullscreen").toBool();
+    bool vsync = config("vsync").toBool();
+    config.useSection();
 
     // Get the proper video mode and style
     sf::VideoMode vidMode;
@@ -174,7 +258,7 @@ void Cells::createWindow(const std::string& title)
     windowSize.x = width;
     windowSize.y = height;
 
-    // This is temporary
+    // Set anti-aliasing
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
 
@@ -188,6 +272,9 @@ void Cells::createWindow(const std::string& title)
     // Update the views
     boardView = window.getDefaultView();
     uiView = boardView;
+    boardView.setCenter(board.width() / 2, board.height() / 2);
+    uiView.setCenter(gui.getWidth() / 2, uiView.getCenter().y);
+    //uiView.move(-gui.getWidth() / 2, 0);
 }
 
 void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
@@ -223,9 +310,7 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
             break;
 
         case sf::Keyboard::R:
-            // Reset zoom to 1:1
-            //sf::Vector2f windowSize = window.getSize();
-            //boardView.setSize();
+            boardView.setSize(windowSize.x, windowSize.y); // Reset zoom to 1:1
             break;
 
         case sf::Keyboard::M:
@@ -237,25 +322,23 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
             board.clear(); // Clear the board
             break;
 
-        case sf::Keyboard::S:
-            board.saveToFile("board"); // Save the board to a file
-            // TODO: Show an inputbox where the user can type the filename they want to save it as
-            break;
-
-        case sf::Keyboard::L:
-            board.loadFromFile("board"); // Load the board from a file
-            break;
-
         case sf::Keyboard::N:
-            simulating = !simulating; // Toggle simulating
+            board.play();
+            gui.updatePlayButton();
             break;
 
         case sf::Keyboard::Y:
             board.saveToImageFile("board.png"); // Save a screenshot
             break;
 
-        case sf::Keyboard::Escape:
-            running = false; // This should probably open a menu instead, and alt-f4 should close the program
+        case sf::Keyboard::Q:
+            --currentPresetRule;
+            loadPresetRule();
+            break;
+
+        case sf::Keyboard::W:
+            ++currentPresetRule;
+            loadPresetRule();
             break;
 
         default:
@@ -272,11 +355,11 @@ void Cells::handleMouseButtonPressed(const sf::Event::MouseButtonEvent& mouseBut
         squareSelection = (mouseButton.button == sf::Mouse::Right);
         cursor.setPosition(mousePos);
         cursor.setCorner(mousePos, squareSelection);
-        std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
-        auto size = cursor.getSize();
-        std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
+        //std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
+        //auto size = cursor.getSize();
+        //std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
     }
-    mouseMovedOrClicked = true;
+    mouseClicked = true;
 }
 
 void Cells::handleMouseButtonReleased(const sf::Event::MouseButtonEvent& mouseButton)
@@ -287,17 +370,18 @@ void Cells::handleMouseButtonReleased(const sf::Event::MouseButtonEvent& mouseBu
         (squareSelection && mouseButton.button == sf::Mouse::Right)))
     {
         cursor.setCorner(mousePos, squareSelection);
-        std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
-        auto size = cursor.getSize();
-        std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
+        //std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
+        //auto size = cursor.getSize();
+        //std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
         changingSelection = false;
     }
+    else if (mouseButton.button == sf::Mouse::Left || mouseButton.button == sf::Mouse::Right)
+        mouseClicked = true;
 }
 
 void Cells::handleMouseMoved(const sf::Event::MouseMoveEvent& mouseMove)
 {
-    mouseMovedOrClicked = true;
-    // TODO: Maybe separate this into 2 variables
+    mouseMoved = true;
 }
 
 void Cells::handleMouseWheelMoved(const sf::Event::MouseWheelEvent& mouseWheel)
@@ -337,6 +421,8 @@ void Cells::handleWindowResized(const sf::Event::SizeEvent& size)
                           (static_cast<float>(size.height) / windowSize.y) * oldSize.y);
         windowSize.x = size.width;
         windowSize.y = size.height;
+        int offset = (static_cast<int>(size.width) - gui.getWidth()) / 2;
+        uiView.reset(sf::FloatRect(-offset, 0, size.width, size.height));
     }
 }
 
@@ -376,13 +462,13 @@ void Cells::handleInput()
             handleKeyPanning();
 
         // Mouse input
-        if (!changingSelection && mouseMovedOrClicked)
+        if (!changingSelection && (mouseClicked || mouseMoved))
         {
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                 handleMouseClick(true);
             else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
                 handleMouseClick(false);
-            else
+            else if (mouseClicked)
                 board.finishLine();
         }
 
@@ -399,33 +485,34 @@ void Cells::handleInput()
             boardView.zoom(1 + elapsedTime);
     }
 
-    mouseMovedOrClicked = false;
+    mouseMoved = false;
+    mouseClicked = false;
 }
 
 void Cells::handleKeyPanning()
 {
     int deltaX = 0, deltaY = 0;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-        deltaY = -1;
+        deltaY -= 1;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-        deltaY = 1;
+        deltaY += 1;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-        deltaX = -1;
+        deltaX -= 1;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-        deltaX = 1;
+        deltaX += 1;
     if (deltaY != 0 || deltaX != 0)
     {
         const auto& boardViewSize = boardView.getSize();
         float offset = (boardViewSize.x * elapsedTime + boardViewSize.y * elapsedTime) / 4;
         boardView.move(deltaX * offset, deltaY * offset);
-        mouseMovedOrClicked = true;
+        mouseMoved = true;
     }
 }
 
 bool Cells::updateMousePos()
 {
     // Get the mouse position
-    sf::Vector2f newMousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+    sf::Vector2f newMousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), boardView);
     if (newMousePos != worldMousePos)
     {
         worldMousePos = newMousePos;
@@ -443,8 +530,7 @@ void Cells::updateCursor(const sf::Vector2i& pos)
     if (changingSelection)
         cursor.setCorner(pos, squareSelection);
     else
-        cursor.setPosition(pos);
-    // selectionCursor.setPosition(pos.x, pos.y);
+        cursor.setPosition(sf::Vector2i(pos.x - (cursor.getSize().x / 2), pos.y - (cursor.getSize().y / 2)));
 }
 
 bool Cells::controlKeyPressed() const
@@ -472,7 +558,7 @@ void Cells::handleMouseClick(bool action)
 
         case Tool::Copy:
             if (action)
-                board.pasteBlock(mousePos);
+                board.pasteBlock(cursor.getPosition());
             else
                 board.copyBlock(cursor.getRect());
             break;
@@ -489,5 +575,18 @@ void Cells::handleMouseClick(bool action)
 
         default:
             break;
+    }
+}
+
+void Cells::loadPresetRule()
+{
+    auto& presetRules = config("presetRules", "Board");
+    if (presetRules.size() >= 1)
+    {
+        if (currentPresetRule < 0)
+            currentPresetRule = presetRules.size() - 1;
+        else if (currentPresetRule > static_cast<int>(presetRules.size() - 1))
+            currentPresetRule = 0;
+        gui.setRules(presetRules[currentPresetRule].toString());
     }
 }

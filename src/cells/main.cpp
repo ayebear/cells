@@ -5,7 +5,7 @@
 
 int main()
 {
-    Cells cells("Cells v0.3.0 Alpha");
+    Cells cells;
     cells.start();
     return 0;
 }

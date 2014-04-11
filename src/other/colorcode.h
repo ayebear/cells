@@ -17,12 +17,12 @@ class ColorCode
         ColorCode();
         ColorCode(const std::string& str);
         ColorCode(const sf::Color& col);
-        ColorCode(unsigned char r, unsigned char g, unsigned char b);
+        ColorCode(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
         ColorCode& operator=(const std::string& str);
         ColorCode& operator=(const sf::Color& col);
         ColorCode& setString(const std::string& str);
         ColorCode& setColor(const sf::Color& col);
-        ColorCode& setRGB(unsigned char r, unsigned char g, unsigned char b);
+        ColorCode& setRGB(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
         const std::string& toString() const;
         const sf::Color& toColor() const;
 
