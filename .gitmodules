@@ -1,0 +1,3 @@
+[submodule "src/configfile"]
+	path = src/configfile
+	url = https://github.com/ayebear/ConfigFile.git
