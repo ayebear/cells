@@ -138,6 +138,7 @@ void InputBox::setText(const std::string& str)
 {
     textStr = str;
     updateText(false);
+    home();
     end();
 }
 

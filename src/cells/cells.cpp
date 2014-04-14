@@ -4,32 +4,42 @@
 #include "cells.h"
 #include <iostream>
 
-const char* Cells::title = "Cells v0.4.0 Alpha";
+const char* Cells::title = "Cells v0.4.1 Alpha";
 
 const cfg::File::ConfigMap Cells::defaultOptions = {
-    {"Window",{
+    {"Window", {
         {"fullscreen", cfg::makeOption(false)},
         {"width", cfg::makeOption(640, 0)},
         {"height", cfg::makeOption(480, 0)},
         {"vsync", cfg::makeOption(true)}
         }
     },
-    {"Board",{
-        {"width", cfg::makeOption(640, 1)},
-        {"height", cfg::makeOption(480, 1)},
+    {"Board", {
+        {"width", cfg::makeOption(640, 3)},
+        {"height", cfg::makeOption(480, 3)},
         {"rules", cfg::makeOption(Board::defaultRuleString)},
         {"autosave", cfg::makeOption(true)}
         }
     },
-    {"",{
+    {"Simulation", {
+        {"speed", cfg::makeOption(60, 0, 60)}
+        }
+    },
+    {"Tool", {
+        {"tool", cfg::makeOption(0, 0, 3)},
+        {"width", cfg::makeOption(1, 1)},
+        {"height", cfg::makeOption(1, 1)}
+        }
+    },
+    {"", {
         {"autosaveConfig", cfg::makeOption(true)}
         }
     }
 };
 
 Cells::Cells():
-    config(defaultOptions),
-    gui(board, config)
+    config(defaultOptions, cfg::File::Warnings | cfg::File::Errors),
+    gui(board, config, tool)
 {
     config.loadFromFile("cells.cfg");
     // Set board settings from config file
@@ -59,22 +69,9 @@ Cells::Cells():
     panning = false;
     mouseMoved = false;
     mouseClicked = false;
-    changingSelection = false;
-    squareSelection = false;
-
-    // Setup tool colors
-    toolColors[Tool::Paint] = sf::Color(96, 96, 255, 128);
-    toolColors[Tool::Copy] = sf::Color(255, 96, 96, 128);
-    toolColors[Tool::NormalSimulator] = sf::Color(255, 255, 96, 128);
-    toolColors[Tool::ToroidalSimulator] = sf::Color(96, 255, 96, 128);
-
-    // Setup cursor
-    setTool(Tool::Paint);
-    cursor.setSize(sf::Vector2i(1, 1));
-    cursor.setThickness(0.5);
-    cursor.setMinimumSize(sf::Vector2u(1, 1));
 
     gui.loadSettings();
+    gui.setVisible();
 
     createWindow();
 }
@@ -102,8 +99,10 @@ Cells::~Cells()
         for (auto& str: colorStrings)
             config("colors").push() = str;
 
+        // Save the board
         if (config("autosave").toBool())
             board.saveToFile("board");
+
         config.writeToFile();
     }
     window.close();
@@ -230,7 +229,7 @@ void Cells::draw()
     window.setView(boardView);
     window.draw(board);
     if (!gui.hasFocus())
-        window.draw(cursor);
+        window.draw(tool);
 
     window.setView(uiView);
     window.draw(gui);
@@ -286,19 +285,19 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
             break;
 
         case sf::Keyboard::Num1:
-            setTool(Tool::Paint);
+            tool.setTool(Tool::Paint);
             break;
 
         case sf::Keyboard::Num2:
-            setTool(Tool::Copy);
+            tool.setTool(Tool::Copy);
             break;
 
         case sf::Keyboard::Num3:
-            setTool(Tool::NormalSimulator);
+            tool.setTool(Tool::NormalSimulator);
             break;
 
         case sf::Keyboard::Num4:
-            setTool(Tool::ToroidalSimulator);
+            tool.setTool(Tool::ToroidalSimulator);
             break;
 
         case sf::Keyboard::I:
@@ -348,35 +347,17 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
 
 void Cells::handleMouseButtonPressed(const sf::Event::MouseButtonEvent& mouseButton)
 {
-    // Start resizing the cursor
-    if ((mouseButton.button == sf::Mouse::Left || mouseButton.button == sf::Mouse::Right) && controlKeyPressed())
-    {
-        changingSelection = true;
-        squareSelection = (mouseButton.button == sf::Mouse::Right);
-        cursor.setPosition(mousePos);
-        cursor.setCorner(mousePos, squareSelection);
-        //std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
-        //auto size = cursor.getSize();
-        //std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
-    }
+    tool.handleMouseButtonPressed(mouseButton, mousePos);
     mouseClicked = true;
 }
 
 void Cells::handleMouseButtonReleased(const sf::Event::MouseButtonEvent& mouseButton)
 {
-    // Finish resizing the cursor
-    if (changingSelection &&
-        ((!squareSelection && mouseButton.button == sf::Mouse::Left) ||
-        (squareSelection && mouseButton.button == sf::Mouse::Right)))
+    if (!tool.handleMouseButtonReleased(mouseButton, mousePos))
     {
-        cursor.setCorner(mousePos, squareSelection);
-        //std::cout << "mousePos = (" << mousePos.x << ", " << mousePos.y << ")\n";
-        //auto size = cursor.getSize();
-        //std::cout << "cursor.getSize() = (" << size.x << ", " << size.y << ")\n";
-        changingSelection = false;
+        if (mouseButton.button == sf::Mouse::Left || mouseButton.button == sf::Mouse::Right)
+            mouseClicked = true;
     }
-    else if (mouseButton.button == sf::Mouse::Left || mouseButton.button == sf::Mouse::Right)
-        mouseClicked = true;
 }
 
 void Cells::handleMouseMoved(const sf::Event::MouseMoveEvent& mouseMove)
@@ -387,15 +368,7 @@ void Cells::handleMouseMoved(const sf::Event::MouseMoveEvent& mouseMove)
 void Cells::handleMouseWheelMoved(const sf::Event::MouseWheelEvent& mouseWheel)
 {
     sf::Vector2f currentCenter = boardView.getCenter();
-    if (controlKeyPressed())
-    {
-        // Handle switching tools
-        if (mouseWheel.delta > 0)
-            setTool(std::min(currentTool + 1, TotalTools - 1));
-        else
-            setTool(std::max(currentTool - 1, 0));
-    }
-    else
+    if (!tool.handleMouseWheelMoved(mouseWheel))
     {
         // Handle zooming
         if (mouseWheel.delta > 0)
@@ -452,7 +425,7 @@ void Cells::handleInput()
             panning = false;
 
         // Update the cursor sprite position
-        updateCursor(mousePos);
+        tool.updateCursor(mousePos);
     }
 
     if (hasFocus)
@@ -462,7 +435,7 @@ void Cells::handleInput()
             handleKeyPanning();
 
         // Mouse input
-        if (!changingSelection && (mouseClicked || mouseMoved))
+        if (!tool.changingSelection && (mouseClicked || mouseMoved))
         {
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                 handleMouseClick(true);
@@ -473,8 +446,8 @@ void Cells::handleInput()
         }
 
         // Simulating
-        if (!changingSelection && currentTool >= NormalSimulator && sf::Mouse::isButtonPressed(sf::Mouse::Left))
-            board.simulate(cursor.getRect(), (currentTool == ToroidalSimulator));
+        if (!tool.changingSelection && tool.getTool() >= Tool::NormalSimulator && sf::Mouse::isButtonPressed(sf::Mouse::Left))
+            board.simulate(tool.cursor.getRect(), (tool.getTool() == Tool::ToroidalSimulator));
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
             board.simulate();
 
@@ -524,53 +497,32 @@ bool Cells::updateMousePos()
     return false;
 }
 
-void Cells::updateCursor(const sf::Vector2i& pos)
-{
-    // Only update the cursor position if a selection isn't being made
-    if (changingSelection)
-        cursor.setCorner(pos, squareSelection);
-    else
-        cursor.setPosition(sf::Vector2i(pos.x - (cursor.getSize().x / 2), pos.y - (cursor.getSize().y / 2)));
-}
-
-bool Cells::controlKeyPressed() const
-{
-    return (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ||
-            sf::Keyboard::isKeyPressed(sf::Keyboard::RControl));
-}
-
-void Cells::setTool(int tool)
-{
-    currentTool = tool;
-    cursor.setColor(toolColors[currentTool]);
-}
-
 void Cells::handleMouseClick(bool action)
 {
-    switch (currentTool)
+    switch (tool.getTool())
     {
         case Tool::Paint:
-            if (cursor.isMinimumSize())
+            if (tool.cursor.isMinimumSize())
                 board.paintLine(mousePos, action);
             else
-                board.paintBlock(cursor.getRect(), action);
+                board.paintBlock(tool.cursor.getRect(), action);
             break;
 
         case Tool::Copy:
             if (action)
-                board.pasteBlock(cursor.getPosition());
+                board.pasteBlock(tool.cursor.getPosition());
             else
-                board.copyBlock(cursor.getRect());
+                board.copyBlock(tool.cursor.getRect());
             break;
 
         case Tool::NormalSimulator:
             if (!action) // Right click
-                board.simulate(cursor.getRect(), false);
+                board.simulate(tool.cursor.getRect(), false);
             break;
 
         case Tool::ToroidalSimulator:
             if (!action) // Right click
-                board.simulate(cursor.getRect(), true);
+                board.simulate(tool.cursor.getRect(), true);
             break;
 
         default:

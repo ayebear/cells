@@ -31,9 +31,7 @@ class Button: public sf::Drawable
         Button();
 
         // These should be called in a loop
-        void handleEvent(const sf::Event& event);
         void handleMouseEvent(const sf::Event& event, const sf::Vector2f& pos);
-        void update();
         void draw(sf::RenderTarget& window, sf::RenderStates states) const;
 
         // Style settings
@@ -49,6 +47,8 @@ class Button: public sf::Drawable
 
         // Widget settings
         void setMode(Mode m);
+        void linkButtons(std::vector<Button>& buttons);
+            // This should use some sort of messaging system instead
 
         // Widget state
         void setText(const std::string& str = "");
@@ -60,9 +60,11 @@ class Button: public sf::Drawable
     private:
         void updateColors();
         void updateTextPosition();
+        void unpressLinkedButtons();
 
         bool hovered;
-        bool pressed;
+        bool pressed; // Button is actually in a different state
+        bool beingPressed; // Button is just being held down by the user
         Mode mode;
 
         sf::RectangleShape box;
@@ -72,6 +74,8 @@ class Button: public sf::Drawable
         sf::Color outlineColors[2];
 
         CallbackType pressedCallback;
+
+        std::vector<Button>* linkedButtons;
 };
 
 #endif

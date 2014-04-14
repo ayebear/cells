@@ -5,7 +5,9 @@ Button::Button()
 {
     hovered = false;
     pressed = false;
+    beingPressed = false;
     mode = Mode::Normal;
+    linkedButtons = nullptr;
     setFontSize();
     setOutlineThickness();
     setColor("outline", "#FFFC");
@@ -16,34 +18,39 @@ Button::Button()
     updateColors();
 }
 
-void Button::handleEvent(const sf::Event& event)
-{
-
-}
-
 void Button::handleMouseEvent(const sf::Event& event, const sf::Vector2f& pos)
 {
     if (event.type == sf::Event::MouseButtonPressed)
     {
         if (collisionBox.contains(pos))
-            setPressed(true);
+        {
+            beingPressed = true;
+            updateColors();
+        }
     }
     else if (event.type == sf::Event::MouseButtonReleased)
     {
-        setPressed(false);
-        if (pressedCallback && collisionBox.contains(pos))
-            pressedCallback(*this);
+        bool wasPressed = (beingPressed && collisionBox.contains(pos));
+        beingPressed = false;
+        if (wasPressed)
+        {
+            if (mode == Mode::Toggle)
+                pressed = !pressed;
+            else if (mode == Mode::Sticky)
+            {
+                pressed = true;
+                unpressLinkedButtons();
+            }
+            if (pressedCallback)
+                pressedCallback(*this);
+        }
+        updateColors();
     }
     else if (event.type == sf::Event::MouseMoved)
     {
         hovered = collisionBox.contains(pos);
         updateColors();
     }
-}
-
-void Button::update()
-{
-
 }
 
 void Button::draw(sf::RenderTarget& window, sf::RenderStates states) const
@@ -107,6 +114,11 @@ void Button::setMode(Mode m)
     mode = m;
 }
 
+void Button::linkButtons(std::vector<Button>& buttons)
+{
+    linkedButtons = &buttons;
+}
+
 void Button::setText(const std::string& str)
 {
     text.setString(str);
@@ -137,7 +149,7 @@ void Button::setPressedCallback(CallbackType callback)
 void Button::updateColors()
 {
     box.setFillColor(fillColors[hovered]);
-    box.setOutlineColor(outlineColors[pressed]);
+    box.setOutlineColor(outlineColors[pressed || beingPressed]);
 }
 
 void Button::updateTextPosition()
@@ -146,4 +158,16 @@ void Button::updateTextPosition()
     text.setPosition(pos);
     float offset = ((pos.x + box.getSize().x) - text.findCharacterPos(-1).x) / 2;
     text.setPosition(pos.x + offset, pos.y);
+}
+
+void Button::unpressLinkedButtons()
+{
+    if (linkedButtons)
+    {
+        for (auto& b: *linkedButtons)
+        {
+            if (&b != this)
+                b.setPressed(false);
+        }
+    }
 }

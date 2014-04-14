@@ -2,16 +2,19 @@
 // See the file LICENSE.txt for copying conditions.
 
 #include "settingsgui.h"
+#include <algorithm>
 #include "board.h"
+#include "tool.h"
 
-SettingsGUI::SettingsGUI(Board& board, cfg::File& config):
+SettingsGUI::SettingsGUI(Board& board, cfg::File& config, Tool& tool):
     board(board),
-    config(config)
+    config(config),
+    tool(tool)
 {
 	using std::placeholders::_1;
 	visible = false;
 	setFocus(false);
-	width = 740;
+	width = 736;
 	height = 146;
 	int top = 32;
 	int left = 10;
@@ -52,7 +55,7 @@ SettingsGUI::SettingsGUI(Board& board, cfg::File& config):
 	toolGroup.setFont(font);
 	toolGroup.setText("Tools");
 	toolGroup.setPosition(sf::Vector2f((groupSize.x + 6) * 4 + 4, 4));
-	toolGroup.setSize(sf::Vector2u(84, height - 8));
+	toolGroup.setSize(sf::Vector2u(80, height - 8));
 
 	// Rule group
 
@@ -140,6 +143,7 @@ SettingsGUI::SettingsGUI(Board& board, cfg::File& config):
 	playButton.setSize(sf::Vector2u(halfElemWidth, elemHeight));
 	playButton.setText("Play");
 	playButton.setPressedCallback(std::bind(&SettingsGUI::playBoard, this, _1));
+	playButton.setMode(Button::Mode::Toggle);
 
 	clearButton.setFont(font);
 	clearButton.setPosition(sf::Vector2f(left + 76, top + 28));
@@ -160,7 +164,27 @@ SettingsGUI::SettingsGUI(Board& board, cfg::File& config):
 	speedInput.setTextEnteredCallback(std::bind(&SettingsGUI::changeSpeed, this, _1));
 
 	// Tools group
-    // Will do this later
+
+	left += groupSize.x + 6;
+
+	const std::string toolNames[] = {
+        "Paint",
+        "Copy",
+        "Simulate",
+        "Toroidal"
+	};
+
+    for (int i = 0; i < 4; ++i)
+    {
+        toolButtons.emplace_back();
+        toolButtons.back().setFont(font);
+        toolButtons.back().setPosition(sf::Vector2f(left, top + i * 28));
+        toolButtons.back().setSize(sf::Vector2u(halfElemWidth, elemHeight));
+        toolButtons.back().setText(toolNames[i]);
+        toolButtons.back().setPressedCallback(std::bind(&SettingsGUI::changeTool, this, _1, i));
+        toolButtons.back().setMode(Button::Mode::Sticky);
+        toolButtons.back().linkButtons(toolButtons);
+    }
 }
 
 void SettingsGUI::loadSettings()
@@ -170,10 +194,15 @@ void SettingsGUI::loadSettings()
     boardFilename.setText(config("lastFilename", "Board").toString());
     widthInput.setNumber(board.width());
     heightInput.setNumber(board.height());
-    speedInput.setNumber(60);
+    changeSpeedPreset(fastSpeed, config("speed", "Simulation").toFloat());
+    config.useSection("Tool");
+    tool.setTool(config("tool").toInt());
+    tool.cursor.setSize(config("width").toInt(), config("height").toInt());
+    toolButtons[tool.getTool()].setPressed(true);
     unsigned row = 0;
     unsigned col = 0;
-    for (auto& opt: config.getSection("PresetColors"))
+    const auto& currentColors = config("colors", "Board");
+    for (const auto& opt: config.getSection("PresetColors"))
     {
         colorButtons.emplace_back();
         colorButtons.back().setFont(font);
@@ -181,6 +210,14 @@ void SettingsGUI::loadSettings()
         colorButtons.back().setSize(sf::Vector2u(68, 20));
         colorButtons.back().setText(opt.first);
         colorButtons.back().setPressedCallback(std::bind(&SettingsGUI::changeColors, this, std::placeholders::_1));
+        colorButtons.back().setMode(Button::Mode::Sticky);
+        colorButtons.back().linkButtons(colorButtons);
+
+        // Compare the colors to see which preset was last used
+        if (opt.second.getVector() != nullptr && currentColors.getVector() != nullptr &&
+            *(opt.second.getVector()) == *(currentColors.getVector()))
+            colorButtons.back().setPressed(true);
+
         ++row;
         if (row >= 3)
         {
@@ -193,6 +230,11 @@ void SettingsGUI::loadSettings()
 void SettingsGUI::saveSettings()
 {
     config("lastFilename", "Board") = boardFilename.getText();
+    config("speed", "Simulation") = speedInput.getNumber();
+    config.useSection("Tool");
+    config("tool") = tool.getTool();
+    config("width") = tool.cursor.getSize().x;
+    config("height") = tool.cursor.getSize().y;
     // Re-parse the colors
     for (auto& opt: config.getSection("PresetColors"))
     {
@@ -203,9 +245,24 @@ void SettingsGUI::saveSettings()
 
 void SettingsGUI::toggle()
 {
-	visible = !visible;
+	setVisible(!visible);
+}
+
+void SettingsGUI::setVisible(bool state)
+{
+    visible = state;
 	if (!visible)
+    {
         setFocus(false);
+
+        // Make sure none of the inputboxes have focus when we hide the GUI,
+        // so that when the GUI is shown again, it won't be stealing input
+        ruleText.setFocus(false);
+        boardFilename.setFocus(false);
+        widthInput.setFocus(false);
+        heightInput.setFocus(false);
+        speedInput.setFocus(false);
+    }
 }
 
 bool SettingsGUI::isVisible() const
@@ -241,10 +298,10 @@ void SettingsGUI::setRules(const std::string& str)
 
 void SettingsGUI::updatePlayButton()
 {
-    if (board.isPlaying())
-        playButton.setText("Pause");
-    else
-        playButton.setText("Play");
+    const std::string buttonStrings[] = {"Play", "Pause"};
+    bool playing = board.isPlaying();
+    playButton.setText(buttonStrings[playing]);
+    playButton.setPressed(playing);
 }
 
 void SettingsGUI::handleEvent(const sf::Event& event)
@@ -262,8 +319,11 @@ void SettingsGUI::handleMouseEvent(const sf::Event& event, const sf::Vector2f& p
     if (event.type == sf::Event::MouseButtonPressed)
         setFocus(collisionBox.contains(pos));
 
-    if (ruleGrid.handleMouseEvent(event, pos, board.accessRules()))
+    // Only pass events to the rule grid if the GUI has focus
+    if (focus && ruleGrid.handleMouseEvent(event, pos, board.accessRules()))
         ruleText.setText(board.getRules());
+    // Update the inputbox if the grid was changed
+
     ruleText.handleMouseEvent(event, pos);
     boardFilename.handleMouseEvent(event, pos);
     loadButton.handleMouseEvent(event, pos);
@@ -280,6 +340,8 @@ void SettingsGUI::handleMouseEvent(const sf::Event& event, const sf::Vector2f& p
     speedInput.handleMouseEvent(event, pos);
     reverseColorsButton.handleMouseEvent(event, pos);
     for (auto& button: colorButtons)
+        button.handleMouseEvent(event, pos);
+    for (auto& button: toolButtons)
         button.handleMouseEvent(event, pos);
 }
 
@@ -319,6 +381,8 @@ void SettingsGUI::draw(sf::RenderTarget& window, sf::RenderStates states) const
 		window.draw(speedInput);
 		window.draw(reverseColorsButton);
 		for (auto& button: colorButtons)
+            window.draw(button);
+        for (auto& button: toolButtons)
             window.draw(button);
 	}
 }
@@ -379,4 +443,9 @@ void SettingsGUI::clearBoard(Button& button)
 void SettingsGUI::randomBoard(Button& button)
 {
     board.addRandom();
+}
+
+void SettingsGUI::changeTool(Button& button, int t)
+{
+    tool.setTool(t);
 }

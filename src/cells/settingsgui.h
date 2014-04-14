@@ -13,6 +13,7 @@
 #include "rulegrid.h"
 
 class Board;
+class Tool;
 
 /*
 This class contains the main GUI for all of the settings.
@@ -25,12 +26,13 @@ TODO:
 class SettingsGUI: public sf::Drawable
 {
     public:
-        SettingsGUI(Board& board, cfg::File& config);
+        SettingsGUI(Board& board, cfg::File& config, Tool& tool);
         void loadSettings();
         void saveSettings();
         void toggle();
+        void setVisible(bool state = true);
         bool isVisible() const;
-        void setFocus(bool state);
+        void setFocus(bool state = true);
         bool hasFocus() const;
         int getWidth() const;
         void setRules(const std::string& str);
@@ -53,11 +55,13 @@ class SettingsGUI: public sf::Drawable
         void playBoard(Button& button);
         void clearBoard(Button& button);
         void randomBoard(Button& button);
+        void changeTool(Button& button, int t);
 
     	bool visible;
     	bool focus;
         Board& board;
         cfg::File& config;
+        Tool& tool;
     	sf::Font font;
     	int width;
     	int height;

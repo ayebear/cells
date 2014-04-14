@@ -8,7 +8,7 @@
 #include <SFML/Graphics.hpp>
 #include "configfile.h"
 #include "board.h"
-#include "selectionbox.h"
+#include "tool.h"
 #include "settingsgui.h"
 
 /*
@@ -37,10 +37,7 @@ class Cells
         void handleInput();
         void handleKeyPanning();
         bool updateMousePos(); // Returns true if the mouse position changed
-        void updateCursor(const sf::Vector2i& pos);
         void updateBorderSize();
-        bool controlKeyPressed() const;
-        void setTool(int tool);
         void handleMouseClick(bool action); // Action is left/right click
         void loadPresetRule();
 
@@ -69,13 +66,7 @@ class Cells
         sf::Vector2f startPanMousePos; // The starting position of the mouse when middle click panning
 
         // Tools
-        enum Tool {Paint = 0, Copy, NormalSimulator, ToroidalSimulator, TotalTools};
-        enum Selection {NoSelection = 0, RectSelection, SquareSelection};
-        int currentTool; // The current tool being used
-        bool changingSelection; // If the cursor size is being changed by the user
-        bool squareSelection; // Square selection if true, otherwise rectangular selection
-        sf::Color toolColors[TotalTools];
-        SelectionBox cursor;
+        Tool tool;
 
         // Other
         int currentPresetRule;
