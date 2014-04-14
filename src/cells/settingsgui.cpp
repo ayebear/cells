@@ -201,7 +201,6 @@ void SettingsGUI::loadSettings()
     toolButtons[tool.getTool()].setPressed(true);
     unsigned row = 0;
     unsigned col = 0;
-    const auto& currentColors = config("colors", "Board");
     for (const auto& opt: config.getSection("PresetColors"))
     {
         colorButtons.emplace_back();
@@ -213,9 +212,8 @@ void SettingsGUI::loadSettings()
         colorButtons.back().setMode(Button::Mode::Sticky);
         colorButtons.back().linkButtons(colorButtons);
 
-        // Compare the colors to see which preset was last used
-        if (opt.second.getVector() != nullptr && currentColors.getVector() != nullptr &&
-            *(opt.second.getVector()) == *(currentColors.getVector()))
+        // Check if this was the last preset used
+        if (config("lastPresetColor", "Board").toString() == opt.first)
             colorButtons.back().setPressed(true);
 
         ++row;
@@ -240,6 +238,12 @@ void SettingsGUI::saveSettings()
     {
         for (auto& elem: opt.second)
             elem = ColorCode(elem.toString()).toString();
+    }
+    // Save the last color preset used
+    for (Button& button: colorButtons)
+    {
+        if (button.isPressed())
+            config("lastPresetColor", "Board") = button.getText();
     }
 }
 

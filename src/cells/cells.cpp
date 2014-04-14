@@ -9,16 +9,18 @@ const char* Cells::title = "Cells v0.4.1 Alpha";
 const cfg::File::ConfigMap Cells::defaultOptions = {
     {"Window", {
         {"fullscreen", cfg::makeOption(false)},
-        {"width", cfg::makeOption(640, 0)},
-        {"height", cfg::makeOption(480, 0)},
+        {"width", cfg::makeOption(800, 0)},
+        {"height", cfg::makeOption(600, 0)},
         {"vsync", cfg::makeOption(true)}
         }
     },
     {"Board", {
-        {"width", cfg::makeOption(640, 3)},
-        {"height", cfg::makeOption(480, 3)},
+        {"width", cfg::makeOption(800, 3)},
+        {"height", cfg::makeOption(600, 3)},
         {"rules", cfg::makeOption(Board::defaultRuleString)},
-        {"autosave", cfg::makeOption(true)}
+        {"autosave", cfg::makeOption(true)},
+        {"lastFilename", cfg::makeOption("")},
+        {"lastPresetColor", cfg::makeOption("")}
         }
     },
     {"Simulation", {
