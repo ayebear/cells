@@ -37,6 +37,7 @@ class SettingsGUI: public sf::Drawable
         int getWidth() const;
         void setRules(const std::string& str);
         void updatePlayButton();
+        void updateToolButtons();
 
         void handleEvent(const sf::Event& event);
         void handleMouseEvent(const sf::Event& event, const sf::Vector2f& pos);

@@ -7,8 +7,6 @@
 #include "colorcode.h"
 #include "strlib.h"
 
-using std::cout;
-
 InputBox::InputBox()
 {
     focus = false;

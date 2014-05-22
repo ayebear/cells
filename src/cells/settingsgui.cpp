@@ -308,6 +308,13 @@ void SettingsGUI::updatePlayButton()
     playButton.setPressed(playing);
 }
 
+void SettingsGUI::updateToolButtons()
+{
+    for (auto& button: toolButtons)
+        button.setPressed(false);
+    toolButtons[tool.getTool()].setPressed(true);
+}
+
 void SettingsGUI::handleEvent(const sf::Event& event)
 {
 	ruleText.handleEvent(event);

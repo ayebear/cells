@@ -50,7 +50,8 @@ Features
   * Improve selection boxes
   * Add icons to buttons, possibly remove their text
   * Restrict zooming/panning so you don't end up somewhere that you don't see anything
-  * Have a full-screen mode
+  * Have a full-screen mode (togglable on runtime)
+  * Have "smooth" zooming
 
 #### Planned for future releases:
 * Figure out a way to have a completely dynamic board size so that everything is unlimited

@@ -288,18 +288,22 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
 
         case sf::Keyboard::Num1:
             tool.setTool(Tool::Paint);
+            gui.updateToolButtons();
             break;
 
         case sf::Keyboard::Num2:
             tool.setTool(Tool::Copy);
+            gui.updateToolButtons();
             break;
 
         case sf::Keyboard::Num3:
             tool.setTool(Tool::NormalSimulator);
+            gui.updateToolButtons();
             break;
 
         case sf::Keyboard::Num4:
             tool.setTool(Tool::ToroidalSimulator);
+            gui.updateToolButtons();
             break;
 
         case sf::Keyboard::I:
@@ -384,6 +388,8 @@ void Cells::handleMouseWheelMoved(const sf::Event::MouseWheelEvent& mouseWheel)
             boardView.setCenter((currentCenter.x * 5 - mousePos.x) / 4, (currentCenter.y * 5 - mousePos.y) / 4);
         }
     }
+    else // Switched tools
+        gui.updateToolButtons();
 }
 
 void Cells::handleWindowResized(const sf::Event::SizeEvent& size)

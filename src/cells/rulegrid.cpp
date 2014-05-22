@@ -2,8 +2,6 @@
 #include "strlib.h"
 #include <iostream>
 
-using std::cout;
-
 const sf::Color RuleGrid::colors[] = {
     sf::Color::Black,
     sf::Color::White
