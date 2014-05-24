@@ -43,7 +43,7 @@ Features
 
 #### Planned for v0.5.x:
 * Add a feature for automatically saving screenshots of each generation
-* Add an optional grid to see the cells more easily when drawing specific things
+* Add an optional grid to see the cells more easily when drawing specific things (working on this now)
 * Make a slider for changing simulation speed
 * Allow editing the colors using the GUI
 * Add more polish:
