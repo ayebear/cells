@@ -12,7 +12,8 @@ const sf::Color Board::borderColors[] = {
     sf::Color::Green
 };
 
-Board::Board()
+Board::Board():
+    grid(sf::Lines)
 {
     playing = false;
     borderState = true;
@@ -22,6 +23,7 @@ Board::Board()
     needToUpdateTexture = true;
     paintingLine = false;
     boardSprite.setPosition(0, 0);
+    gridShown = false;
     setMaxSpeed(unlimitedSpeed);
     setRules();
 
@@ -61,6 +63,7 @@ void Board::resize(unsigned width, unsigned height, bool preserve)
             updateImage();
         updateTexture();
         updateBorderSize();
+        updateGrid();
     }
 }
 
@@ -371,6 +374,7 @@ bool Board::loadFromFile(const std::string& filename)
         updateImage();
         updateTexture();
         updateBorderSize();
+        updateGrid();
     }
     return status;
 }
@@ -390,6 +394,19 @@ bool Board::setBoardState(bool state)
         status = true;
     }
     return status;
+}
+
+void Board::setGridColor(const std::string& color)
+{
+    if (!color.empty())
+        gridColor = color;
+    for (unsigned i = 0; i < grid.getVertexCount(); i++)
+        grid[i].color = gridColor.toColor();
+}
+
+void Board::showGrid(bool state)
+{
+    gridShown = state;
 }
 
 void Board::updateImage()
@@ -416,6 +433,8 @@ void Board::draw(sf::RenderTarget& window, sf::RenderStates states) const
 {
     window.draw(boardSprite);
     window.draw(border);
+    if (gridShown)
+        window.draw(grid);
 }
 
 unsigned Board::countCellsFast(const sf::Vector2u& pos)
@@ -551,4 +570,26 @@ void Board::updateMaxState()
 {
     maxState = static_cast<char>(cellColors.size() - 1);
     maxStateInt = static_cast<int>(cellColors.size() - 1);
+}
+
+void Board::updateGrid()
+{
+    unsigned boardWidth = width();
+    unsigned boardHeight = height();
+    unsigned gridSize = boardWidth * 2 + boardHeight * 2 + 4;
+    grid.resize(gridSize);
+    // Generate columns
+    for (unsigned col = 0; col <= boardWidth; ++col)
+    {
+        grid[col * 2].position = sf::Vector2f(col, 0);
+        grid[col * 2 + 1].position = sf::Vector2f(col, boardHeight);
+    }
+    // Generate rows
+    unsigned pos = (boardWidth * 2) + 2;
+    for (unsigned row = 0; row <= boardHeight; ++row)
+    {
+        grid[pos + row * 2].position = sf::Vector2f(0, row);
+        grid[pos + row * 2 + 1].position = sf::Vector2f(boardWidth, row);
+    }
+    setGridColor();
 }

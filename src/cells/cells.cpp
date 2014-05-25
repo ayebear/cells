@@ -20,7 +20,8 @@ const cfg::File::ConfigMap Cells::defaultOptions = {
         {"rules", cfg::makeOption(Board::defaultRuleString)},
         {"autosave", cfg::makeOption(true)},
         {"lastFilename", cfg::makeOption("")},
-        {"lastPresetColor", cfg::makeOption("")}
+        {"lastPresetColor", cfg::makeOption("")},
+        {"gridColor", cfg::makeOption("#808080")}
         }
     },
     {"Simulation", {
@@ -55,8 +56,9 @@ Cells::Cells():
     }
     // Set the colors and rules
     board.setColors(colorOpt);
-    board.setRules(config("rules").toString());
+    board.setRules(config("rules"));
     currentPresetRule = 0;
+    board.setGridColor(config("gridColor"));
 
     // Load the last board or make a new one of the configured size
     bool status = false;

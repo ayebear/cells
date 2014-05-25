@@ -70,6 +70,8 @@ class Board: public sf::Drawable
 
         // Rendering
         bool setBoardState(bool state); // Sets the color of the border (returns true if changed)
+        void setGridColor(const std::string& color = ""); // Sets the color of the grid
+        void showGrid(bool state = true); // Show/hide the grid
         void updateImage(); // Updates the pixels of the image from the logical array
         void updateTexture(); // Copies the image to the texture if necessary
         void draw(sf::RenderTarget& window, sf::RenderStates states) const; // Draw to the window
@@ -90,6 +92,7 @@ class Board: public sf::Drawable
         void updateBorderSize(); // Updates the size of the border
         sf::Rect<unsigned> fixRectangle(const sf::IntRect& rect) const; // Takes any rectangle and returns one within bounds of the board
         void updateMaxState();
+        void updateGrid();
 
         // The rule set
         RuleSet rules;
@@ -111,6 +114,9 @@ class Board: public sf::Drawable
         bool borderState;
         std::vector<ColorCode> cellColors; // The colors used for the cells
         bool needToUpdateTexture;
+        sf::VertexArray grid;
+        ColorCode gridColor;
+        bool gridShown;
 
         // Simulation speed limiter
         sf::Clock simTimer;
