@@ -40,6 +40,9 @@ class Cells
         void updateBorderSize();
         void handleMouseClick(bool action); // Action is left/right click
         void loadPresetRule();
+        void updateShowGrid();
+        bool restrictZoomIn();
+        bool restrictZoomOut();
 
         bool running; // Used to determine when the main loop ends
         bool hasFocus; // To determine whether to handle input or not
@@ -59,6 +62,12 @@ class Cells
         sf::View boardView; // View for the board
         sf::View uiView; // View for the interface
         sf::Vector2u windowSize; // The window size, used for resizing purposes
+        float maxZoomIn;
+        float maxZoomOut;
+
+        // Grid
+        bool showGrid;
+        unsigned showGridAt;
 
         // Positions
         sf::Vector2f worldMousePos; // The current float position of the mouse

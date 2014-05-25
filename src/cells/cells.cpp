@@ -3,8 +3,9 @@
 
 #include "cells.h"
 #include <iostream>
+#include <functional>
 
-const char* Cells::title = "Cells v0.4.1 Alpha";
+const char* Cells::title = "Cells v0.5.0 Beta";
 
 const cfg::File::ConfigMap Cells::defaultOptions = {
     {"Window", {
@@ -21,7 +22,11 @@ const cfg::File::ConfigMap Cells::defaultOptions = {
         {"autosave", cfg::makeOption(true)},
         {"lastFilename", cfg::makeOption("")},
         {"lastPresetColor", cfg::makeOption("")},
-        {"gridColor", cfg::makeOption("#808080")}
+        {"gridColor", cfg::makeOption("#808080")},
+        {"showGrid", cfg::makeOption(true)},
+        {"showGridAt", cfg::makeOption(8)},
+        {"maxZoomIn", cfg::makeOption(32.0f, 0.0f)},
+        {"maxZoomOut", cfg::makeOption(1.0f, 0.0f)}
         }
     },
     {"Simulation", {
@@ -42,7 +47,7 @@ const cfg::File::ConfigMap Cells::defaultOptions = {
 
 Cells::Cells():
     config(defaultOptions, cfg::File::Warnings | cfg::File::Errors),
-    gui(board, config, tool)
+    gui(board, config, tool, [&](bool state){ showGrid = state; updateShowGrid(); })
 {
     config.loadFromFile("cells.cfg");
     // Set board settings from config file
@@ -58,7 +63,19 @@ Cells::Cells():
     board.setColors(colorOpt);
     board.setRules(config("rules"));
     currentPresetRule = 0;
+
+    // Set grid options
     board.setGridColor(config("gridColor"));
+    showGrid = config("showGrid").toBool();
+    showGridAt = config("showGridAt").toInt();
+
+    // Set view options
+    maxZoomIn = config("maxZoomIn").toFloat();
+    maxZoomOut = config("maxZoomOut").toFloat();
+    if (maxZoomIn <= 0.0f)
+        maxZoomIn = 32.0f;
+    if (maxZoomOut <= 0.0f)
+        maxZoomOut = 1.0f;
 
     // Load the last board or make a new one of the configured size
     bool status = false;
@@ -102,6 +119,12 @@ Cells::~Cells()
         auto colorStrings = board.getColorStrings();
         for (auto& str: colorStrings)
             config("colors").push() = str;
+
+        // Save grid/view settings
+        config("showGrid") = showGrid;
+        config("showGridAt") = showGridAt;
+        config("maxZoomIn") = maxZoomIn;
+        config("maxZoomOut") = maxZoomOut;
 
         // Save the board
         if (config("autosave").toBool())
@@ -310,14 +333,19 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
 
         case sf::Keyboard::I:
             boardView.zoom(0.5); // Zoom in 2x
+            updateShowGrid();
+            restrictZoomIn();
             break;
 
         case sf::Keyboard::O:
             boardView.zoom(2); // Zoom out 2x
+            updateShowGrid();
+            restrictZoomOut();
             break;
 
         case sf::Keyboard::R:
             boardView.setSize(windowSize.x, windowSize.y); // Reset zoom to 1:1
+            updateShowGrid();
             break;
 
         case sf::Keyboard::M:
@@ -382,12 +410,16 @@ void Cells::handleMouseWheelMoved(const sf::Event::MouseWheelEvent& mouseWheel)
         if (mouseWheel.delta > 0)
         {
             boardView.zoom(0.8);
-            boardView.setCenter((currentCenter.x * 3 + mousePos.x) / 4, (currentCenter.y * 3 + mousePos.y) / 4);
+            if (!restrictZoomIn())
+                boardView.setCenter((currentCenter.x * 3 + mousePos.x) / 4, (currentCenter.y * 3 + mousePos.y) / 4);
+            updateShowGrid();
         }
         else
         {
             boardView.zoom(1.25);
-            boardView.setCenter((currentCenter.x * 5 - mousePos.x) / 4, (currentCenter.y * 5 - mousePos.y) / 4);
+            if (!restrictZoomOut())
+                boardView.setCenter((currentCenter.x * 5 - mousePos.x) / 4, (currentCenter.y * 5 - mousePos.y) / 4);
+            updateShowGrid();
         }
     }
     else // Switched tools
@@ -463,9 +495,17 @@ void Cells::handleInput()
 
         // Zooming
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Add))
+        {
             boardView.zoom(1 / (1 + elapsedTime));
+            updateShowGrid();
+            restrictZoomIn();
+        }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Subtract))
+        {
             boardView.zoom(1 + elapsedTime);
+            updateShowGrid();
+            restrictZoomOut();
+        }
     }
 
     mouseMoved = false;
@@ -551,4 +591,25 @@ void Cells::loadPresetRule()
             currentPresetRule = 0;
         gui.setRules(presetRules[currentPresetRule].toString());
     }
+}
+
+void Cells::updateShowGrid()
+{
+    board.showGrid(showGrid && (boardView.getSize().x * showGridAt <= windowSize.x));
+}
+
+bool Cells::restrictZoomIn()
+{
+    bool status = (boardView.getSize().x * maxZoomIn <= windowSize.x);
+    if (status)
+        boardView.setSize(windowSize.x / maxZoomIn, windowSize.y / maxZoomIn);
+    return status;
+}
+
+bool Cells::restrictZoomOut()
+{
+    bool status = (boardView.getSize().x * maxZoomOut >= windowSize.x);
+    if (status)
+        boardView.setSize(windowSize.x / maxZoomOut, windowSize.y / maxZoomOut);
+    return status;
 }

@@ -5,12 +5,14 @@
 #define SETTINGSGUI_H
 
 #include <vector>
+#include <functional>
 #include <SFML/Graphics.hpp>
 #include "inputbox.h"
 #include "button.h"
 #include "groupbox.h"
 #include "configfile.h"
 #include "rulegrid.h"
+#include "buttonmap.h"
 
 class Board;
 class Tool;
@@ -26,7 +28,8 @@ TODO:
 class SettingsGUI: public sf::Drawable
 {
     public:
-        SettingsGUI(Board& board, cfg::File& config, Tool& tool);
+        using CallbackType = std::function<void(bool)>;
+        SettingsGUI(Board& board, cfg::File& config, Tool& tool, CallbackType callback);
         void loadSettings();
         void saveSettings();
         void toggle();
@@ -56,41 +59,43 @@ class SettingsGUI: public sf::Drawable
         void playBoard(Button& button);
         void clearBoard(Button& button);
         void randomBoard(Button& button);
+        void updateShowGrid(Button& button);
         void changeTool(Button& button, int t);
 
-    	bool visible;
-    	bool focus;
+        bool visible;
+        bool focus;
         Board& board;
         cfg::File& config;
         Tool& tool;
-    	sf::Font font;
-    	int width;
-    	int height;
+        CallbackType showGridCallback;
+        sf::Font font;
+        int width;
+        int height;
 
-    	// Groups and stuff
-    	sf::RectangleShape panel;
-    	sf::FloatRect collisionBox;
-    	GroupBox ruleGroup;
-    	GroupBox boardGroup;
-    	GroupBox colorGroup;
-    	GroupBox simulationGroup;
-    	GroupBox toolGroup;
+        // Groups and stuff
+        sf::RectangleShape panel;
+        sf::FloatRect collisionBox;
+        GroupBox ruleGroup;
+        GroupBox boardGroup;
+        GroupBox colorGroup;
+        GroupBox simulationGroup;
+        GroupBox toolGroup;
 
-    	// Rule group
-    	RuleGrid ruleGrid;
-    	InputBox ruleText;
+        // All of the buttons (later there will be some kind of WidgetMap to handle everything)
+        ButtonMap buttons;
 
-    	// Board group
-    	InputBox boardFilename;
-    	Button loadButton;
-    	Button saveButton;
-    	InputBox widthInput;
-    	InputBox heightInput;
-    	Button changeSizeButton;
-    	// Would be nice to fit screenshot buttons here
+        // Rule group
+        RuleGrid ruleGrid;
+        InputBox ruleText;
 
-    	// Color group
-    	// Will need scrollable window of:
+        // Board group
+        InputBox boardFilename;
+        InputBox widthInput;
+        InputBox heightInput;
+        // Would be nice to fit screenshot buttons here
+
+        // Color group
+        // Will need scrollable window of:
             // InputBox (color)
             // Button (remove: "-")
         // InputBox (new color)
@@ -98,21 +103,14 @@ class SettingsGUI: public sf::Drawable
         // The inputboxes could be outlined with the color entered, same with the text
         // For now just have a few preset buttons:
         std::vector<Button> colorButtons;
-        Button reverseColorsButton;
 
-    	// Simulation group
+        // Simulation group
         // Slider simSpeedSlider;
         // InputBox simSpeedInput;
-        Button slowSpeed;
-        Button mediumSpeed;
-        Button fastSpeed;
-        Button playButton; // Switches to pause when running
-        Button clearButton;
-        Button randomButton;
         InputBox speedInput;
 
-    	// Tools group
-    	std::vector<Button> toolButtons;
+        // Tools group
+        std::vector<Button> toolButtons;
 };
 
 #endif

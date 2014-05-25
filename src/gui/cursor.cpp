@@ -17,7 +17,7 @@ Cursor::Cursor()
 void Cursor::restartTimer()
 {
     timer.restart();
-	show = true;
+    show = true;
 }
 
 void Cursor::update()

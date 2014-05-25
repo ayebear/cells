@@ -29,6 +29,7 @@ class Button: public sf::Drawable
         };
 
         Button();
+        void setup(const sf::Font& f, const sf::Vector2f& pos, const sf::Vector2u& size, const std::string& text = "");
 
         // These should be called in a loop
         void handleMouseEvent(const sf::Event& event, const sf::Vector2f& pos);

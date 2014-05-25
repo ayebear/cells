@@ -11,19 +11,19 @@ Features
 
 * GUI for changing settings on the fly
   * Rules
-  	* Rule grid and rule string
-  	* These automatically sync together
+    * Rule grid and rule string
+    * These automatically sync together
   * Board
-  	* Load/save with any filename
-  	* Resizable to any size
+    * Load/save with any filename
+    * Resizable to any size
   * Colors
-  	* Preset colors from config file are shown
-  	* Can reverse the currently used colors
+    * Preset colors from config file are shown
+    * Can reverse the currently used colors
   * Simulation
-  	* Simulation speed can be finely adjusted
-  	* Play/pause, clear, and random buttons
+    * Simulation speed can be finely adjusted
+    * Play/pause, clear, and random buttons
   * Tools
-  	* Paint/duplicate/simulate/toroidal
+    * Paint/duplicate/simulate/toroidal
 * Customizable rule sets
   * The states on the rule grid can be switched on/off
   * These can also be defined in a format like "B3/S23"
@@ -43,7 +43,6 @@ Features
 
 #### Planned for v0.5.x:
 * Add a feature for automatically saving screenshots of each generation
-* Add an optional grid to see the cells more easily when drawing specific things (working on this now)
 * Make a slider for changing simulation speed
 * Allow editing the colors using the GUI
 * Add more polish:
@@ -66,7 +65,7 @@ There are various hotkeys and mouse controls for manipulating, controlling, and 
 * GUI:
   * Escape - Toggle visibility of GUI
   * Clicking anywhere on the GUI or the board will switch focus to what was clicked on
-  	* This is indicated by a green border around either the GUI or the board
+    * This is indicated by a green border around either the GUI or the board
 * Tools:
   * Left click - Use current tool's primary action
   * Right click - Use current tool's secondary action

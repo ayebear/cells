@@ -18,6 +18,14 @@ Button::Button()
     updateColors();
 }
 
+void Button::setup(const sf::Font& f, const sf::Vector2f& pos, const sf::Vector2u& size, const std::string& text)
+{
+    setFont(f);
+    setPosition(pos);
+    setSize(size);
+    setText(text);
+}
+
 void Button::handleMouseEvent(const sf::Event& event, const sf::Vector2f& pos)
 {
     if (event.type == sf::Event::MouseButtonPressed)
