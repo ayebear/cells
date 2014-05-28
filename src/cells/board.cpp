@@ -26,6 +26,8 @@ Board::Board():
     gridShown = false;
     setMaxSpeed(unlimitedSpeed);
     setRules();
+    autosaveImages = false;
+    autosavePartialImages = false;
 
     // Setup border
     border.setPosition(0, 0);
@@ -39,6 +41,13 @@ Board::Board(unsigned width, unsigned height):
     Board()
 {
     resize(width, height, false);
+}
+
+void Board::setupScreenshots(const std::string& format, bool save, bool savePartial)
+{
+    filenameGen.setFormat(format);
+    autosaveImages = save;
+    autosavePartialImages = savePartial;
 }
 
 void Board::resize(unsigned width, unsigned height, bool preserve)
@@ -162,10 +171,10 @@ RuleSet& Board::accessRules()
 
 void Board::simulate(bool toroidal)
 {
-    simulate(sf::IntRect(0, 0, width(), height()), toroidal);
+    simulate(sf::IntRect(0, 0, width(), height()), toroidal, false);
 }
 
-void Board::simulate(const sf::IntRect& rect, bool toroidal)
+void Board::simulate(const sf::IntRect& rect, bool toroidal, bool partial)
 {
     auto fixedRect = fixRectangle(rect);
     // Make sure the simulation area is at least 3x3
@@ -190,7 +199,7 @@ void Board::simulate(const sf::IntRect& rect, bool toroidal)
         unsigned totalCells = 0;
 
         // This fixes a bug where partial simulations cause not all cells to be copied
-        if (fixedRect.width < width() || fixedRect.height < height()) // If this is a partial simulation
+        if (partial || fixedRect.width < width() || fixedRect.height < height()) // If this is a partial simulation
             board[writeBoard] = board[readBoard]; // Copy the latest board to the board being written to
 
         // 1) Go through the main part of the cells except for the edges
@@ -209,6 +218,12 @@ void Board::simulate(const sf::IntRect& rect, bool toroidal)
 
         // std::cout << fixedRect.width << " x " << fixedRect.height << " block simulated at {" <<
         // fixedRect.left << ", " << fixedRect.top << ", " << right << ", " << bottom << "} - " << totalCells << " cells simulated\n";
+
+        // Save a screenshot
+        if (partial && autosavePartialImages)
+            saveToImageFile(rect);
+        else if (!partial && autosaveImages)
+            saveToImageFile();
     }
 }
 
@@ -381,7 +396,15 @@ bool Board::loadFromFile(const std::string& filename)
 
 bool Board::saveToImageFile(const std::string& filename) const
 {
-    return boardImage.saveToFile(filename);
+    return boardImage.saveToFile(filename.empty() ? filenameGen.getNextFilename() : filename);
+}
+
+bool Board::saveToImageFile(const sf::IntRect& rect, const std::string& filename) const
+{
+    sf::Image partialImage;
+    partialImage.create(rect.width, rect.height);
+    partialImage.copy(boardImage, 0, 0, rect);
+    return partialImage.saveToFile(filename.empty() ? filenameGen.getNextFilename() : filename);
 }
 
 bool Board::setBoardState(bool state)

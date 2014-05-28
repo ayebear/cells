@@ -21,12 +21,18 @@ const cfg::File::ConfigMap Cells::defaultOptions = {
         {"rules", cfg::makeOption(Board::defaultRuleString)},
         {"autosave", cfg::makeOption(true)},
         {"lastFilename", cfg::makeOption("")},
-        {"lastPresetColor", cfg::makeOption("")},
-        {"gridColor", cfg::makeOption("#808080")},
-        {"showGrid", cfg::makeOption(true)},
-        {"showGridAt", cfg::makeOption(8)},
+        {"lastPresetColor", cfg::makeOption("")}
+        }
+    },
+    {"View", {
         {"maxZoomIn", cfg::makeOption(32.0f, 0.0f)},
         {"maxZoomOut", cfg::makeOption(1.0f, 0.0f)}
+        }
+    },
+    {"Grid", {
+        {"color", cfg::makeOption("#808080")},
+        {"show", cfg::makeOption(true)},
+        {"showAtPx", cfg::makeOption(8)},
         }
     },
     {"Simulation", {
@@ -37,6 +43,12 @@ const cfg::File::ConfigMap Cells::defaultOptions = {
         {"tool", cfg::makeOption(0, 0, 3)},
         {"width", cfg::makeOption(1, 1)},
         {"height", cfg::makeOption(1, 1)}
+        }
+    },
+    {"Screenshots", {
+        {"filename", cfg::makeOption("screenshots/screenshot %n.png")},
+        {"autosave", cfg::makeOption(false)},
+        {"autosavePartial", cfg::makeOption(false)}
         }
     },
     {"", {
@@ -65,11 +77,13 @@ Cells::Cells():
     currentPresetRule = 0;
 
     // Set grid options
-    board.setGridColor(config("gridColor"));
-    showGrid = config("showGrid").toBool();
-    showGridAt = config("showGridAt").toInt();
+    config.useSection("Grid");
+    board.setGridColor(config("color"));
+    showGrid = config("show").toBool();
+    showGridAt = config("showAtPx").toInt();
 
     // Set view options
+    config.useSection("View");
     maxZoomIn = config("maxZoomIn").toFloat();
     maxZoomOut = config("maxZoomOut").toFloat();
     if (maxZoomIn <= 0.0f)
@@ -77,8 +91,13 @@ Cells::Cells():
     if (maxZoomOut <= 0.0f)
         maxZoomOut = 1.0f;
 
+    // Set screenshot options
+    config.useSection("Screenshots");
+    board.setupScreenshots(config("filename"), config("autosave").toBool(), config("autosavePartial").toBool());
+
     // Load the last board or make a new one of the configured size
     bool status = false;
+    config.useSection("Board");
     if (config("autosave").toBool())
         status = board.loadFromFile("board");
     if (!status)
@@ -121,10 +140,10 @@ Cells::~Cells()
             config("colors").push() = str;
 
         // Save grid/view settings
-        config("showGrid") = showGrid;
-        config("showGridAt") = showGridAt;
-        config("maxZoomIn") = maxZoomIn;
-        config("maxZoomOut") = maxZoomOut;
+        config("show", "Grid") = showGrid;
+        config("showAtPx", "Grid") = showGridAt;
+        config("maxZoomIn", "View") = maxZoomIn;
+        config("maxZoomOut", "View") = maxZoomOut;
 
         // Save the board
         if (config("autosave").toBool())
@@ -363,7 +382,7 @@ void Cells::handleKeyPressed(const sf::Event::KeyEvent& key)
             break;
 
         case sf::Keyboard::Y:
-            board.saveToImageFile("board.png"); // Save a screenshot
+            board.saveToImageFile(); // Save a screenshot
             break;
 
         case sf::Keyboard::Q:

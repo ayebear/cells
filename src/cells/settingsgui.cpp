@@ -165,7 +165,7 @@ void SettingsGUI::loadSettings()
     tool.setTool(config("tool").toInt());
     tool.cursor.setSize(config("width").toInt(), config("height").toInt());
     updateToolButtons();
-    buttons["grid"].setPressed(config("showGrid", "Board").toBool());
+    buttons["grid"].setPressed(config("show", "Grid").toBool());
     unsigned row = 0;
     unsigned col = 0;
     for (const auto& opt: config.getSection("PresetColors"))

@@ -10,6 +10,7 @@
 #include "ruleset.h"
 #include "colorcode.h"
 #include "configoption.h"
+#include "filenamegenerator.h"
 
 /*
 This class is used for simulating cellular automata.
@@ -23,6 +24,7 @@ class Board: public sf::Drawable
 
         Board();
         Board(unsigned width, unsigned height);
+        void setupScreenshots(const std::string& format, bool save, bool savePartial);
 
         // Board size
         void resize(unsigned width, unsigned height, bool preserve = true); // Resizes the board, can be non-destructive
@@ -46,7 +48,7 @@ class Board: public sf::Drawable
 
         // Simulation
         void simulate(bool toroidal = true); // Runs a single generation on the entire board
-        void simulate(const sf::IntRect& rect, bool toroidal = true); // Runs a single generation on the specified area
+        void simulate(const sf::IntRect& rect, bool toroidal = true, bool partial = true); // Runs a single generation on the specified area
         void setMaxSpeed(float speed);
         bool play(); // Returns true if playing, false if paused
         bool isPlaying() const;
@@ -66,7 +68,9 @@ class Board: public sf::Drawable
         void addRandom(); // Adds some random cells
         bool saveToFile(const std::string& filename) const; // Saves the board to a file
         bool loadFromFile(const std::string& filename); // Loads the board from a file
-        bool saveToImageFile(const std::string& filename) const; // Saves the graphical board to an image file
+        bool saveToImageFile(const std::string& filename = "") const; // Saves the entire graphical board to an image file
+        bool saveToImageFile(const sf::IntRect& rect, const std::string& filename = "") const; // Saves a portion of the graphical board to an image file
+        //bool loadFromImageFile(const std::string& filename) const; // Loads the board from an image (Note: current colors are used)
 
         // Rendering
         bool setBoardState(bool state); // Sets the color of the border (returns true if changed)
@@ -123,6 +127,11 @@ class Board: public sf::Drawable
         float maxSpeed;
         float maxTime;
         static const float unlimitedSpeed;
+
+        // Screenshots
+        FilenameGenerator filenameGen;
+        bool autosaveImages;
+        bool autosavePartialImages;
 
         // Other variables
         sf::Vector2i lastLinePos;
