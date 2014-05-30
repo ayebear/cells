@@ -22,6 +22,7 @@ Features
   * Simulation
     * Simulation speed can be finely adjusted
     * Play/pause, clear, and random buttons
+    * Can automatically save generations to image files
   * Tools
     * Paint/duplicate/simulate/toroidal
 * Customizable rule sets
@@ -42,15 +43,17 @@ Features
 ### Future plans
 
 #### Planned for v0.5.x:
-* Add a feature for automatically saving screenshots of each generation
 * Make a slider for changing simulation speed
-* Allow editing the colors using the GUI
-* Add more polish:
-  * Improve selection boxes
-  * Add icons to buttons, possibly remove their text
-  * Restrict zooming/panning so you don't end up somewhere that you don't see anything
-  * Have a full-screen mode (togglable on runtime)
-  * Have "smooth" zooming
+  * Get rid of the 3 speed buttons
+* Use a list box instead of buttons for the colors
+  * This way you could have any amount of color palettes and could scroll through them
+* Improve selection boxes (so they don't move after resizing them)
+* Add icons to buttons, possibly remove their text
+* Restrict panning so you don't end up somewhere that you don't see anything
+* Have a full-screen mode (togglable on runtime, would need to re-create the window)
+* Have "smooth" zooming, so it zooms over a short period of time instead of instantly
+* Add some kind of list box or dropdown that shows all of the preset rules and their names
+  * Will need to update the config to have the names of the rules
 
 #### Planned for future releases:
 * Figure out a way to have a completely dynamic board size so that everything is unlimited

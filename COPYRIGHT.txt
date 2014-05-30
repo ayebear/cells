@@ -1,4 +1,4 @@
-Cells - Cellular Automata Simulation Program
+Cells - Cellular automaton program
 
 Copyright (C) 2014 Eric Hebert (ayebear)
 
