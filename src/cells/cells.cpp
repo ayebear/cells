@@ -2,7 +2,6 @@
 // See the file LICENSE.txt for copying conditions.
 
 #include "cells.h"
-#include <iostream>
 #include <functional>
 
 const char* Cells::title = "Cells v0.5.0 Beta";
@@ -560,7 +559,6 @@ bool Cells::updateMousePos()
         worldMousePos = newMousePos;
         mousePos.x = floor(worldMousePos.x);
         mousePos.y = floor(worldMousePos.y);
-        //std::cout << "updateMousePos(" << mousePos.x << ", " << mousePos.y << ")\n";
         return true;
     }
     return false;

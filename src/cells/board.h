@@ -88,7 +88,7 @@ class Board: public sf::Drawable
         void determineState(const sf::Vector2u& pos, unsigned count); // Determines the next state of the cell based on the number of neighboring cells
 
         // Other functions
-        void setCell(const sf::Vector2u& pos, bool state); // Sets the state of a cell
+        void setCell(const sf::Vector2u& pos, char state); // Sets the state of a cell
         void incrementCell(const sf::Vector2u& pos, bool state); // Sets the state of a cell (also increments the color)
         void setPixel(unsigned x, unsigned y, char state); // Set the graphical state of a cell
         bool inBounds(const sf::Vector2i& pos) const; // Returns if the coordinates are in bounds of the board
@@ -118,6 +118,8 @@ class Board: public sf::Drawable
         bool borderState;
         std::vector<ColorCode> cellColors; // The colors used for the cells
         bool needToUpdateTexture;
+
+        // Visual grid around cells
         sf::VertexArray grid;
         ColorCode gridColor;
         bool gridShown;
@@ -138,7 +140,6 @@ class Board: public sf::Drawable
         bool paintingLine;
         Matrix<char> copiedCells;
         char maxState;
-        int maxStateInt;
 };
 
 #endif

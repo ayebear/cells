@@ -2,7 +2,6 @@
 // See the file LICENSE.txt for copying conditions.
 
 #include "board.h"
-#include <iostream>
 #include <algorithm>
 
 const char* Board::defaultRuleString = "B3/S23";
@@ -13,21 +12,21 @@ const sf::Color Board::borderColors[] = {
 };
 
 Board::Board():
-    grid(sf::Lines)
+    readBoard(0),
+    writeBoard(0),
+    playing(false),
+    borderState(true),
+    needToUpdateTexture(true),
+    grid(sf::Lines),
+    gridShown(false),
+    autosaveImages(false),
+    autosavePartialImages(false),
+    paintingLine(false)
 {
-    playing = false;
-    borderState = true;
     resetColors();
-    readBoard = 0;
-    writeBoard = 0;
-    needToUpdateTexture = true;
-    paintingLine = false;
     boardSprite.setPosition(0, 0);
-    gridShown = false;
     setMaxSpeed(unlimitedSpeed);
     setRules();
-    autosaveImages = false;
-    autosavePartialImages = false;
 
     // Setup border
     border.setPosition(0, 0);
@@ -216,9 +215,6 @@ void Board::simulate(const sf::IntRect& rect, bool toroidal, bool partial)
                 determineState(cellPos, (toroidal ? countCellsToroidal(cellPos, fixedRect) : countCellsNormal(cellPos)));
         readBoard = writeBoard;
 
-        // std::cout << fixedRect.width << " x " << fixedRect.height << " block simulated at {" <<
-        // fixedRect.left << ", " << fixedRect.top << ", " << right << ", " << bottom << "} - " << totalCells << " cells simulated\n";
-
         // Save a screenshot
         if (partial && autosavePartialImages)
             saveToImageFile(rect);
@@ -294,7 +290,6 @@ void Board::paintLine(const sf::Vector2i& startPos, const sf::Vector2i& endPos, 
 
 void Board::paintLine(const sf::Vector2i& pos, bool state)
 {
-    //std::cout << "paintLine()\n";
     if (paintingLine)
         paintLine(lastLinePos, pos, state);
     else
@@ -307,7 +302,6 @@ void Board::paintLine(const sf::Vector2i& pos, bool state)
 
 void Board::finishLine()
 {
-    //std::cout << "finishLine()\n";
     paintingLine = false;
 }
 
@@ -321,8 +315,6 @@ void Board::paintBlock(const sf::IntRect& rect, bool state)
         for (unsigned y = 0; y < fixedRect.height; ++y)
             for (unsigned x = 0; x < fixedRect.width; ++x)
                 setCell(sf::Vector2u(fixedRect.left + x, fixedRect.top + y), state);
-
-        //std::cout << fixedRect.width << " x " << fixedRect.height << " block painted.\n";
     }
 }
 
@@ -339,19 +331,22 @@ void Board::copyBlock(const sf::IntRect& rect)
         for (unsigned y = 0; y < fixedRect.height; ++y)
             for (unsigned x = 0; x < fixedRect.width; ++x)
                 copiedCells(x, y) = board[readBoard](fixedRect.left + x, fixedRect.top + y);
-
-        //std::cout << fixedRect.width << " x " << fixedRect.height << " block copied at {" << fixedRect.left << ", " << fixedRect.top << "}\n";
     }
 }
 
 void Board::pasteBlock(const sf::Vector2i& pos)
 {
-    // Paint the cells
+    // Paste the cells exactly as they were copied
     for (unsigned y = 0; y < copiedCells.height(); ++y)
+    {
         for (unsigned x = 0; x < copiedCells.width(); ++x)
-            paintCell(sf::Vector2i(pos.x + x, pos.y + y), copiedCells(x, y));
-
-    //std::cout << copiedCells.width() << " x " << copiedCells.height() << " block pasted.\n";
+        {
+            sf::Vector2u absolutePos(pos.x + x, pos.y + y);
+            // Make sure the state is valid, since the colors could change
+            char state = std::min(copiedCells(x, y), maxState);
+            setCell(absolutePos, state);
+        }
+    }
 }
 
 void Board::clear()
@@ -359,7 +354,7 @@ void Board::clear()
     sf::Vector2u cellPos;
     for (cellPos.y = 0; cellPos.y < board[writeBoard].height(); ++cellPos.y)
         for (cellPos.x = 0; cellPos.x < board[writeBoard].width(); ++cellPos.x)
-            setCell(cellPos, false);
+            setCell(cellPos, 0);
 }
 
 void Board::addRandom()
@@ -445,7 +440,6 @@ void Board::updateTexture()
 {
     if (needToUpdateTexture)
     {
-        //std::cout << "Updating texture...\n";
         boardTexture.loadFromImage(boardImage); // Copy the image into the texture
         boardSprite.setTexture(boardTexture, true);
         needToUpdateTexture = false;
@@ -531,7 +525,7 @@ void Board::determineState(const sf::Vector2u& pos, unsigned count)
     incrementCell(pos, rules.getRule(currentState, count));
 }
 
-void Board::setCell(const sf::Vector2u& pos, bool state)
+void Board::setCell(const sf::Vector2u& pos, char state)
 {
     board[writeBoard](pos) = state;
     setPixel(pos.x, pos.y, state);
@@ -592,7 +586,6 @@ sf::Rect<unsigned> Board::fixRectangle(const sf::IntRect& rect) const
 void Board::updateMaxState()
 {
     maxState = static_cast<char>(cellColors.size() - 1);
-    maxStateInt = static_cast<int>(cellColors.size() - 1);
 }
 
 void Board::updateGrid()
