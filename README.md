@@ -104,23 +104,50 @@ Installation Instructions
 -------------------------
 
 #### Dependencies
-  | Library | Minimum Version | Architecture |
-  | ------- | --------------- | ------------ |
-  | SFML    | `3.1`           | x32 *or* x64 |
+| Library | Minimum Version   | Architecture   |
+| ------- | :---------------: | :------------: |
+| SFML    | `2.1`             | x32 *or* x64   |
 
 #### Compiler Support
-  | Compilers | Recommended Version | Minimum Version |
-  | --------- | ------------------- | --------------- |
-  | MSVC | 'v120' | 'v120' |
-  | GNU Compiler Collection(G++) | `4.9.0` | `4.8.0` | 
-  | Clang | `3.4.0` | `3.1.0` |
+| Compilers                    | Recommended Version   | Minimum Version   |
+| ---------                    | :-------------------: | :---------------: |
+| MSVC                         | 'v120'                | 'v120'            |
+| GNU Compiler Collection(G++) | `4.9.0`               | `4.8.0`           | 
+| Clang                        | `3.4.0`               | `3.1.0`           |
   
-  | Build System | Recommended Version | Minimum Version |
-  | ------------ | ------------------- | --------------- |
-  | CMake | `2.8.4` | `2.8.4` |
+| Build System | Recommended Version   | Minimum Version   |
+| ------------ | :-------------------: | :---------------: |
+| CMake        | `2.8.4`               | `2.8.4`           |
   
 #### Building
 
+Before beginning to build this application, make sure you have downloaded the prerequisites above.
+
+#### Window
+1. Clone the master Cells repository in a directory of your choice
+
+2. Create a build folder. This project requires an out-of-tree build. This means you ~~will be unable to~~ **should not** run CMake inside the repository.
+
+3. Open up the CMake GUI. In the input box laballed "Where is the source code:", enter the full path to the source folder. In the input box labelled "Where to build the binaries:", enter the full path to the build folder you created in step 2
+
+4. Add CMake variable definitions, you will need just one variable to configure and generate the project:
+  * `SFML_ROOT` - The root folder of SFML (e.g. *c:/local/sfml-2.1*)
+
+5. Press the "Configure" button. A window will pop up asking you which compiler to use. Select your x64 version of your preferred compiler. Note that it is possible to build x32 without running into any errors, feel to modify your build to build x86 if you wish.
+
+6. If the "Generate" button is not clickable, press "Configure" again. Repeat this step until the "Generate" button becomes clickable.
+
+7. Press "Generate".
+
+8. Open up the build folder, and double-click Cells.sln
+
+9. Build the **All Build** target. **Only** build in debug if you *actually* want to debug something; without optimizations the program will run extremely slow. CMake copies the source dependencies to the executable directory, in this case you will find the cfg file and font in `{BINARY_DIR}/data/fonts/`.
+
+10. copy the required DLL's into your Debug/Release folder, these would be
+  * `sfml-graphics-2.dll`
+  * `sfml-system-2.dll`
+  * `sfml-window-2.dll`
+  * For Debug mode make sure you use the debug SFML DLLS, the one's with a trailing `-d`.
 
 Code
 ----
