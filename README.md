@@ -5,6 +5,7 @@ Cells is a cellular automaton program. It was inspired by Conway's Game of Life 
 
 More information about CA can be found here: http://en.wikipedia.org/wiki/Cellular_automaton
 
+* [contents1](https://github.com/Syntaf/Cells/tree/master/README.md#controls)
 
 Features
 --------
