@@ -9,6 +9,11 @@ More information about CA can be found here: http://en.wikipedia.org/wiki/Cellul
   * [Future Plans](https://github.com/Syntaf/Cells/tree/master/README.md#future-plans)
 * [Controls](https://github.com/Syntaf/Cells/tree/master/README.md#controls)
 * [Installation](https://github.com/Syntaf/Cells/tree/master/README.md#installation-instructions)
+  * [Dependencies](https://github.com/Syntaf/Cells/tree/master/README.md#dependencies)
+  * [Compiler Support](https://github.com/Syntaf/Cells/tree/master/README.md#compiler-support)
+  * [Building](https://github.com/Syntaf/Cells/tree/master/README.md#building)
+    * [Windows](https://github.com/Syntaf/Cells/tree/master/README.md#windows)
+    * [Linux](https://github.com/Syntaf/Cells/tree/master/README.md#linux)
 * [Code](https://github.com/Syntaf/Cells/tree/master/README.md#code)
 * [Author](https://github.com/Syntaf/Cells/tree/master/README.md#author)
 
@@ -123,7 +128,7 @@ Installation Instructions
 
 Before beginning to build this application, make sure you have downloaded the prerequisites above.
 
-#### Window
+#### Windows
 1. Clone the master Cells repository in a directory of your choice
 
 2. Create a build folder. This project requires an out-of-tree build. This means you ~~will be unable to~~ **should not** run CMake inside the repository.
@@ -148,6 +153,10 @@ Before beginning to build this application, make sure you have downloaded the pr
   * `sfml-system-2.dll`
   * `sfml-window-2.dll`
   * For Debug mode make sure you use the debug SFML DLLS, the one's with a trailing `-d`.
+
+#### Linux
+
+coming soon....
 
 Code
 ----
