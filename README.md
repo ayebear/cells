@@ -103,8 +103,23 @@ There are various hotkeys and mouse controls for manipulating, controlling, and 
 Installation Instructions
 -------------------------
 
-Download the archive for your OS under releases, then extract it, and run the program.
-You can also compile the code yourself using a recent version of GCC or another C++11 compliant compiler.
+#### Dependencies
+  | Library | Minimum Version | Architecture |
+  | ------- | --------------- | ------------ |
+  | SFML    | `3.1`           | x32 *or* x64 |
+
+#### Compiler Support
+  | Compilers | Recommended Version | Minimum Version |
+  | --------- | ------------------- | --------------- |
+  | MSVC | 'v120' | 'v120' |
+  | GNU Compiler Collection(G++) | `4.9.0` | `4.8.0` | 
+  | Clang | `3.4.0` | `3.1.0` |
+  
+  | Build System | Recommended Version | Minimum Version |
+  | ------------ | ------------------- | --------------- |
+  | CMake | `2.8.4` | `2.8.4` |
+  
+#### Building
 
 
 Code
