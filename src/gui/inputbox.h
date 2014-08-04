@@ -5,6 +5,7 @@
 #define INPUTBOX_H
 
 #include <string>
+#include <functional>
 #include <SFML/Graphics.hpp>
 #include "cursor.h"
 
