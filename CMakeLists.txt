@@ -62,7 +62,8 @@ set(SOURCES
 )
 
 set(RUNTIME_DEPENDENCIES
-
+  cells.cfg
+  data/fonts/Ubuntu-B.ttf
 )
 
 #include directories
