@@ -155,9 +155,13 @@ Before beginning to build this application, make sure you have downloaded the pr
   * For Debug mode make sure you use the debug SFML DLLS, the one's with a trailing `-d`.
 
 #### Linux
+1. Install dependencies and supported compiler. Packages should be named something like libsfml-dev and g++, but this may vary depending on your distribution.
 
-For now, you can manually add the source code to an IDE project, such as Code::Blocks, and build using that. Later, the CMake script will be modified to support Linux and other operating systems.
+2. Follow steps 1 to 7 above. The default SFML_INCLUDE_DIR should be correct (something like /usr/include).
 
+3. Compile the code using the method you chose to generate. For Unix makefiles, open a terminal in the build directory and type "make".
+
+4. Run the program by typing "./Cells", or by double-clicking the binary file.
 
 Code
 ----
