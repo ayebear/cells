@@ -97,14 +97,14 @@ Installation Instructions
 #### Compiler Support
 | Compilers                    | Recommended Version   | Minimum Version   |
 | ---------                    | :-------------------: | :---------------: |
-| MSVC                         | 'v120'                | 'v120'            |
-| GNU Compiler Collection(G++) | `4.9.0`               | `4.8.0`           | 
+| MSVC                         | `v120`                | `v120`            |
+| GNU Compiler Collection(G++) | `4.9.0`               | `4.8.0`           |
 | Clang                        | `3.4.0`               | `3.1.0`           |
-  
+
 | Build System | Recommended Version   | Minimum Version   |
 | ------------ | :-------------------: | :---------------: |
 | CMake        | `2.8.4`               | `2.8.4`           |
-  
+
 #### Building
 
 Before beginning to build this application, make sure you have downloaded the prerequisites above.
