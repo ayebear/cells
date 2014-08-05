@@ -336,15 +336,20 @@ void Board::copyBlock(const sf::IntRect& rect)
 
 void Board::pasteBlock(const sf::Vector2i& pos)
 {
-    // Paste the cells exactly as they were copied
-    for (unsigned y = 0; y < copiedCells.height(); ++y)
+    // Calculate the proper block of cells to paste
+    auto fixedRect = fixRectangle(sf::IntRect(pos.x, pos.y, copiedCells.width(), copiedCells.height()));
+    if (fixedRect.width > 0 && fixedRect.height > 0)
     {
-        for (unsigned x = 0; x < copiedCells.width(); ++x)
+        // Paste the cells exactly as they were copied
+        for (unsigned y = 0; y < fixedRect.height; ++y)
         {
-            sf::Vector2u absolutePos(pos.x + x, pos.y + y);
-            // Make sure the state is valid, since the colors could change
-            char state = std::min(copiedCells(x, y), maxState);
-            setCell(absolutePos, state);
+            for (unsigned x = 0; x < fixedRect.width; ++x)
+            {
+                sf::Vector2u absolutePos(fixedRect.left + x, fixedRect.top + y);
+                // Make sure the state is valid, since the colors could change
+                char state = std::min(copiedCells(x, y), maxState);
+                setCell(absolutePos, state);
+            }
         }
     }
 }

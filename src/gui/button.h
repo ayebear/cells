@@ -7,12 +7,9 @@
 
 /*
 TODO:
-    Work with multiple modes
-        Make a method to link buttons together
     Support using an image to the left of the text (or as the whole button)
     Support having focus of the keyboard
     Support using an image for the button backgrounds
-    Integrate with guilib
 */
 
 // Widget that is a clickable button with settings to change its behavior
