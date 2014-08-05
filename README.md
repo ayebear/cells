@@ -17,6 +17,7 @@ More information about CA can be found here: http://en.wikipedia.org/wiki/Cellul
 * [Code](https://github.com/ayebear/Cells/tree/master/README.md#code)
 * [Author](https://github.com/ayebear/Cells/tree/master/README.md#author)
 
+
 Features
 --------
 
@@ -50,25 +51,6 @@ Features
   * This is specified as a list of colors in #RGB or #RRGGBB format
   * The first color is used for dead cells, and the rest of the colors are used for live cells
   * Each generation a cell is still live, it will switch to the next color. Once it reaches the last color, it will stay that color until it dies.
-
-### Future plans
-
-#### Planned for v0.5.x:
-* Make a slider for changing simulation speed
-  * Get rid of the 3 speed buttons
-* Use a list box instead of buttons for the colors
-  * This way you could have any amount of color palettes and could scroll through them
-* Improve selection boxes (so they don't move after resizing them)
-* Add icons to buttons, possibly remove their text
-* Restrict panning so you don't end up somewhere that you don't see anything
-* Have a full-screen mode (togglable on runtime, would need to re-create the window)
-* Have "smooth" zooming, so it zooms over a short period of time instead of instantly
-* Add some kind of list box or dropdown that shows all of the preset rules and their names
-  * Will need to update the config to have the names of the rules
-
-#### Planned for future releases:
-* Figure out a way to have a completely dynamic board size so that everything is unlimited
-  * Along with this would be a new algorithm that could be more efficient
 
 
 Controls
@@ -111,7 +93,7 @@ Installation Instructions
 #### Dependencies
 | Library | Minimum Version   | Architecture   |
 | ------- | :---------------: | :------------: |
-| SFML    | `2.1`             | x32 *or* x64   |
+| SFML    | `2.1`             | x86 *or* x64   |
 
 #### Compiler Support
 | Compilers                    | Recommended Version   | Minimum Version   |
@@ -162,6 +144,7 @@ Before beginning to build this application, make sure you have downloaded the pr
 3. Compile the code using the method you chose to generate. For Unix makefiles, open a terminal in the build directory and type "make".
 
 4. Run the program by typing "./Cells", or by double-clicking the binary file.
+
 
 Code
 ----
