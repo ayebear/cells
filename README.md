@@ -5,17 +5,17 @@ Cells is a cellular automaton program. It was inspired by Conway's Game of Life 
 
 More information about CA can be found here: http://en.wikipedia.org/wiki/Cellular_automaton
 
-* [Features](https://github.com/Syntaf/Cells/tree/master/README.md#features)
-  * [Future Plans](https://github.com/Syntaf/Cells/tree/master/README.md#future-plans)
-* [Controls](https://github.com/Syntaf/Cells/tree/master/README.md#controls)
-* [Installation](https://github.com/Syntaf/Cells/tree/master/README.md#installation-instructions)
-  * [Dependencies](https://github.com/Syntaf/Cells/tree/master/README.md#dependencies)
-  * [Compiler Support](https://github.com/Syntaf/Cells/tree/master/README.md#compiler-support)
-  * [Building](https://github.com/Syntaf/Cells/tree/master/README.md#building)
-    * [Windows](https://github.com/Syntaf/Cells/tree/master/README.md#windows)
-    * [Linux](https://github.com/Syntaf/Cells/tree/master/README.md#linux)
-* [Code](https://github.com/Syntaf/Cells/tree/master/README.md#code)
-* [Author](https://github.com/Syntaf/Cells/tree/master/README.md#author)
+* [Features](https://github.com/ayebear/Cells/tree/master/README.md#features)
+  * [Future Plans](https://github.com/ayebear/Cells/tree/master/README.md#future-plans)
+* [Controls](https://github.com/ayebear/Cells/tree/master/README.md#controls)
+* [Installation](https://github.com/ayebear/Cells/tree/master/README.md#installation-instructions)
+  * [Dependencies](https://github.com/ayebear/Cells/tree/master/README.md#dependencies)
+  * [Compiler Support](https://github.com/ayebear/Cells/tree/master/README.md#compiler-support)
+  * [Building](https://github.com/ayebear/Cells/tree/master/README.md#building)
+    * [Windows](https://github.com/ayebear/Cells/tree/master/README.md#windows)
+    * [Linux](https://github.com/ayebear/Cells/tree/master/README.md#linux)
+* [Code](https://github.com/ayebear/Cells/tree/master/README.md#code)
+* [Author](https://github.com/ayebear/Cells/tree/master/README.md#author)
 
 Features
 --------
@@ -133,12 +133,12 @@ Before beginning to build this application, make sure you have downloaded the pr
 
 2. Create a build folder. This project requires an out-of-tree build. This means you ~~will be unable to~~ **should not** run CMake inside the repository.
 
-3. Open up the CMake GUI. In the input box laballed "Where is the source code:", enter the full path to the source folder. In the input box labelled "Where to build the binaries:", enter the full path to the build folder you created in step 2
+3. Open up the CMake GUI. In the input box labeled "Where is the source code:", enter the full path to the source folder. In the input box labeled "Where to build the binaries:", enter the full path to the build folder you created in step 2
 
 4. Add CMake variable definitions, you will need just one variable to configure and generate the project:
   * `SFML_ROOT` - The root folder of SFML (e.g. *c:/local/sfml-2.1*)
 
-5. Press the "Configure" button. A window will pop up asking you which compiler to use. Select your x64 version of your preferred compiler. Note that it is possible to build x32 without running into any errors, feel to modify your build to build x86 if you wish.
+5. Press the "Configure" button. A window will pop up asking you which compiler to use. Select your x64 version of your preferred compiler. Note that it is possible to build x86 without running into any errors, feel free to modify your build to build x86 if you wish.
 
 6. If the "Generate" button is not clickable, press "Configure" again. Repeat this step until the "Generate" button becomes clickable.
 
@@ -148,7 +148,7 @@ Before beginning to build this application, make sure you have downloaded the pr
 
 9. Build the **All Build** target. **Only** build in debug if you *actually* want to debug something; without optimizations the program will run extremely slow. CMake copies the source dependencies to the executable directory, in this case you will find the cfg file and font in `{BINARY_DIR}/data/fonts/`.
 
-10. copy the required DLL's into your Debug/Release folder, these would be
+10. Copy the required DLL's into your Debug/Release folder, these would be
   * `sfml-graphics-2.dll`
   * `sfml-system-2.dll`
   * `sfml-window-2.dll`
@@ -156,7 +156,8 @@ Before beginning to build this application, make sure you have downloaded the pr
 
 #### Linux
 
-coming soon....
+For now, you can manually add the source code to an IDE project, such as Code::Blocks, and build using that. Later, the CMake script will be modified to support Linux and other operating systems.
+
 
 Code
 ----
