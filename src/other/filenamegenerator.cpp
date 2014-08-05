@@ -35,6 +35,6 @@ void FilenameGenerator::findNext() const
     {
         ++currentNum;
         std::ifstream file(getFilename().c_str());
-        status = file;
+        status = file.good();
     }
 }
