@@ -5,16 +5,14 @@ Cells is a cellular automaton program. It was inspired by Conway's Game of Life 
 
 More information about CA can be found here: http://en.wikipedia.org/wiki/Cellular_automaton
 
-* [Features](https://github.com/ayebear/Cells/tree/master/README.md#features)
-* [Controls](https://github.com/ayebear/Cells/tree/master/README.md#controls)
-* [Installation](https://github.com/ayebear/Cells/tree/master/README.md#installation-instructions)
-  * [Dependencies](https://github.com/ayebear/Cells/tree/master/README.md#dependencies)
-  * [Compiler Support](https://github.com/ayebear/Cells/tree/master/README.md#compiler-support)
-  * [Building](https://github.com/ayebear/Cells/tree/master/README.md#building)
-    * [Windows](https://github.com/ayebear/Cells/tree/master/README.md#windows)
-    * [Linux](https://github.com/ayebear/Cells/tree/master/README.md#linux)
-* [Code](https://github.com/ayebear/Cells/tree/master/README.md#code)
-* [Author](https://github.com/ayebear/Cells/tree/master/README.md#author)
+* [Features](https://github.com/ayebear/Cells/blob/master/README.md#features)
+* [Controls](https://github.com/ayebear/Cells/blob/master/README.md#controls)
+* [Installation](https://github.com/ayebear/Cells/blob/master/README.md#installation)
+* [Building](https://github.com/ayebear/Cells/blob/master/README.md#building)
+  * [Minimum Requirements](https://github.com/ayebear/Cells/blob/master/README.md#minimum-requirements)
+  * [Steps To Build](https://github.com/ayebear/Cells/blob/master/README.md#steps-to-build)
+* [License](https://github.com/ayebear/Cells/blob/master/README.md#license)
+* [Author](https://github.com/ayebear/Cells/blob/master/README.md#author)
 
 
 Features
@@ -86,71 +84,31 @@ There are various hotkeys and mouse controls for manipulating, controlling, and 
   * Y - Save the board to an image
 
 
-Installation Instructions
--------------------------
+Installation
+------------
 
-#### Dependencies
-| Library | Minimum Version   | Architecture   |
-| ------- | :---------------: | :------------: |
-| SFML    | `2.1`             | x86 *or* x64   |
-
-#### Compiler Support
-| Compilers                    | Recommended Version   | Minimum Version   |
-| ---------                    | :-------------------: | :---------------: |
-| MSVC                         | `v120`                | `v120`            |
-| GNU Compiler Collection(G++) | `4.9.0`               | `4.8.0`           |
-| Clang                        | `3.4.0`               | `3.1.0`           |
-
-| Build System | Recommended Version   | Minimum Version   |
-| ------------ | :-------------------: | :---------------: |
-| CMake        | `2.8.4`               | `2.8.4`           |
-
-#### Building
-
-Before beginning to build this application, make sure you have downloaded the prerequisites above.
-
-#### Windows
-1. Clone the master Cells repository in a directory of your choice
-
-2. Create a build folder. This project requires an out-of-tree build. This means you ~~will be unable to~~ **should not** run CMake inside the repository.
-
-3. Open up the CMake GUI. In the input box labeled "Where is the source code:", enter the full path to the source folder. In the input box labeled "Where to build the binaries:", enter the full path to the build folder you created in step 2
-
-4. Add CMake variable definitions, you will need just one variable to configure and generate the project:
-  * `SFML_ROOT` - The root folder of SFML (e.g. *c:/local/sfml-2.1*)
-
-5. Press the "Configure" button. A window will pop up asking you which compiler to use. Select your x64 version of your preferred compiler. Note that it is possible to build x86 without running into any errors, feel free to modify your build to build x86 if you wish.
-
-6. If the "Generate" button is not clickable, press "Configure" again. Repeat this step until the "Generate" button becomes clickable.
-
-7. Press "Generate".
-
-8. Open up the build folder, and double-click Cells.sln
-
-9. Build the **All Build** target. **Only** build in debug if you *actually* want to debug something; without optimizations the program will run extremely slow. CMake copies the source dependencies to the executable directory, in this case you will find the cfg file and font in `{BINARY_DIR}/data/fonts/`.
-
-10. Copy the required DLL's into your Debug/Release folder, these would be
-  * `sfml-graphics-2.dll`
-  * `sfml-system-2.dll`
-  * `sfml-window-2.dll`
-  * For Debug mode make sure you use the debug SFML DLLS, the one's with a trailing `-d`.
-
-#### Linux
-1. Install dependencies and supported compiler. Packages should be named something like libsfml-dev and g++, but this may vary depending on your distribution.
-
-2. Follow steps 1 to 7 above. The default SFML_INCLUDE_DIR should be correct (something like /usr/include).
-
-3. Compile the code using the method you chose to generate. For Unix makefiles, open a terminal in the build directory and type "make".
-
-4. Run the program by typing "./Cells", or by double-clicking the binary file.
+Head over to [releases](https://github.com/ayebear/Cells/releases) to download the latest stable version.
 
 
-Code
-----
+Building
+--------
 
-The code is written in C++11, and uses SFML 2.1 (https://github.com/LaurentGomila/SFML).
+#### Minimum Requirements
 
-The code is licensed under the GPLv3 license. See LICENSE.txt for more details.
+* [SFML 2.1](http://www.sfml-dev.org/)
+* GCC 4.8 or Clang 3.1
+* CMake 2.8.12
+
+#### Steps To Build
+
+1. Use CMake to generate a Makefile or an IDE project.
+2. Use the generated files to build Cells.
+
+
+License
+-------
+
+This source code is licensed under the GPLv3 license. See LICENSE.txt for more details.
 
 
 Author
