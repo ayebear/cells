@@ -95,14 +95,15 @@ Building
 
 #### Minimum Requirements
 
-* [SFML 2.1](http://www.sfml-dev.org/)
-* GCC 4.8 or Clang 3.1
-* CMake 2.8.12
+* [SFML](http://www.sfml-dev.org/) 2.1
+* [GCC](https://gcc.gnu.org/) 4.8 or [Clang](http://clang.llvm.org/) 3.1
+* [CMake](http://www.cmake.org/) 2.8.12
 
 #### Steps To Build
 
-1. Use CMake to generate a Makefile or an IDE project.
-2. Use the generated files to build Cells.
+1. Install all of the dependencies listed above.
+2. Use CMake to generate a Makefile or an IDE project.
+3. Use the generated files to build Cells.
 
 
 License
