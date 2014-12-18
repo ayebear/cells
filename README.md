@@ -1,9 +1,15 @@
 Cells
 =====
 
-Cells is a cellular automaton program. It was inspired by Conway's Game of Life (http://en.wikipedia.org/wiki/Conway's_Game_of_Life), and supports a total of 2^18 (262,144) unique rule sets.
+Cells is a [cellular automaton](http://en.wikipedia.org/wiki/Cellular_automaton) program. It was inspired by [Conway's Game of Life](http://en.wikipedia.org/wiki/Conway's_Game_of_Life), and supports a total of 2^18 (262,144) unique rule sets.
 
-More information about CA can be found here: http://en.wikipedia.org/wiki/Cellular_automaton
+##### Screenshot
+
+![alt tag](https://dl.dropboxusercontent.com/u/10528991/Cells_screenshot.png)
+
+
+Table Of Contents
+-----------------
 
 * [Features](https://github.com/ayebear/Cells/blob/master/README.md#features)
 * [Controls](https://github.com/ayebear/Cells/blob/master/README.md#controls)
