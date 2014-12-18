@@ -55,33 +55,33 @@ Controls
 
 There are various hotkeys and mouse controls for manipulating, controlling, and viewing the board.
 
-* GUI:
-  * Escape - Toggle visibility of GUI
-  * Clicking anywhere on the GUI or the board will switch focus to what was clicked on
-    * This is indicated by a green border around either the GUI or the board
-* Tools:
-  * Left click - Use current tool's primary action
-  * Right click - Use current tool's secondary action
-  * 1, 2, 3, etc., or Ctrl + mouse wheel - Switch between the tools
-  * Ctrl + left click drag - Change tool selection size (rectangular)
-  * Ctrl + right click drag - Change tool selection size (square)
-  * Ctrl + click - Reset tool selection size to 1x1
-* Simulating:
-  * Spacebar - Run continually at current speed
-  * Enter - Run a single generation
-  * N - Toggle running continually at current speed
-  * Q/W - Cycle through preset rules
-* Panning:
-  * Arrow keys or middle click drag - Pan around the board
-  * M - Center the board
-* Zooming:
-  * + and - keys - Zoom in and out
-  * I and O - Zoom in and out 2x
-  * Mouse wheel - Zoom in and out to mouse pointer
-  * R - Reset the zoom to 1:1
-* Board:
-  * C - Clear the board
-  * Y - Save the board to an image
+Controls                            | Description
+----------------------------------- | --------------------------------------
+**GUI:**                            |
+  Escape                            | Toggle visibility of GUI
+**Tools:**                          |
+  Left click                        | Use current tool's primary action
+  Right click                       | Use current tool's secondary action
+  1, 2, 3, 4, or Ctrl + mouse wheel | Switch between the tools
+  Ctrl + left click drag            | Change tool selection size (rectangular)
+  Ctrl + right click drag           | Change tool selection size (square)
+  Ctrl + click                      | Reset tool selection size to 1x1
+**Simulating:**                     |
+  Spacebar                          | Run continually at current speed
+  Enter                             | Run a single generation
+  N                                 | Toggle running continually at current speed
+  Q/W                               | Cycle through preset rules
+**Panning:**                        |
+  Arrow keys or middle click drag   | Pan around the board
+  M                                 | Center the board
+**Zooming:**                        |
+  + and - keys                      | Zoom in and out
+  I and O                           | Zoom in and out 2x
+  Mouse wheel                       | Zoom in and out to mouse pointer
+  R                                 | Reset the zoom to 1:1
+**Board:**                          |
+  C                                 | Clear the board
+  Y                                 | Save the board to an image
 
 
 Installation
@@ -96,7 +96,7 @@ Building
 #### Minimum Requirements
 
 * [SFML](http://www.sfml-dev.org/) 2.1
-* [GCC](https://gcc.gnu.org/) 4.8 or [Clang](http://clang.llvm.org/) 3.1
+* [GCC](https://gcc.gnu.org/) 4.8 **or** [Clang](http://clang.llvm.org/) 3.1
 * [CMake](http://www.cmake.org/) 2.8.12
 
 #### Steps To Build
