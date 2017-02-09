@@ -5,7 +5,7 @@ Cells is a [cellular automaton](http://en.wikipedia.org/wiki/Cellular_automaton)
 
 ##### Screenshot
 
-![alt tag](https://dl.dropboxusercontent.com/u/10528991/Cells_screenshot.png)
+![alt tag](http://ayebear.com/data/Cells.png)
 
 
 Table Of Contents
